@@ -79,7 +79,7 @@ updateWindow = SDL.updateWindowSurface
 -- | Collect all events from inputs
 collectEvents :: MonadIO m => m [SDL.EventPayload]
 collectEvents = SDL.pollEvent >>= \case
-    Nothing -> return []
+    Nothing -> pure []
     Just e  -> (SDL.eventPayload e :) <$> collectEvents
 
 -- | Checks if specific event happend

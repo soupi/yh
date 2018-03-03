@@ -16,4 +16,4 @@ import qualified Play.MovingBox as MB
 
 run :: IO ()
 run = do
-  runGame (Stack MB.initStateState [])
+  runGame (Stack (MB.initStateState 1) [])

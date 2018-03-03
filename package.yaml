@@ -22,6 +22,7 @@ dependencies:
 - bytestring
 - sdl2
 - linear
+- deepseq
 
 library:
   source-dirs: src
@@ -56,6 +57,7 @@ executables:
     - play
 
     ghc-options:
+    - -O2
     - -rtsopts
 
     default-extensions:

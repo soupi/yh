@@ -10,13 +10,16 @@ import Data.Tuple
 import Play.Types
 import Play.Input
 import Control.Lens
+import GHC.Generics
+import Control.DeepSeq
 
 data Settings
   = Settings
-  { _windowSize :: Size
-  , _keyMap :: [(Key, SDL.Scancode)]
+  { _windowSize :: !Size
+  , _keyMap :: ![(Key, SDL.Scancode)]
+  , _keyStats :: !Keys
   }
-  deriving Show
+  deriving (Show)
 
 makeLenses ''Settings
 
@@ -28,4 +31,5 @@ def :: Settings
 def = Settings
   { _windowSize = Size 800 600
   , _keyMap = defKeyMap
+  , _keyStats = initKeyStats
   }

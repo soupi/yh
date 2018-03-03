@@ -9,6 +9,7 @@ import Control.Monad
 import qualified SDL
 import qualified Linear
 import Control.Lens
+import Control.DeepSeq
 
 import qualified Play.MySDL.MySDL as MySDL
 import Play.Input
@@ -42,16 +43,14 @@ update
   -> IO (Either [String] (Settings, Stack State.State))
 update payload keyPressed (settings, stack) =
   let
-    events = makeEvents payload keyPressed (_keyMap settings)
+    keys = makeEvents (_keyStats settings) payload keyPressed (_keyMap settings)
   in pure
-    . runResult settings
-    $ State.updater (Input events) stack
+    . (keys `deepseq` runResult $! set keyStats keys settings)
+    $ State.updater (Input keys) stack
 
 
 render :: (SDL.Window, SDL.Renderer) -> Stack State.State -> IO ()
 render (_, renderer) stack = do
-  MySDL.setBGColor (Linear.V4 0 0 0 255) renderer
---  drawRects (Lens.view CPU.gfx cpu) renderer
   State.renderer renderer stack
   SDL.present renderer
 

@@ -1,8 +1,10 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, DeriveGeneric, DeriveAnyClass #-}
 
 module Play.Types where
 
 import Control.Lens (makeLenses)
+import GHC.Generics
+import Control.DeepSeq
 
 -----------
 -- Types --
@@ -10,17 +12,17 @@ import Control.Lens (makeLenses)
 
 data Point
   = Point
-  { _pX :: !Int
-  , _pY :: !Int
+  { _pX :: {-# UNPACK #-} !Int
+  , _pY :: {-# UNPACK #-} !Int
   }
-  deriving (Show, Read, Eq, Ord)
+  deriving (Show, Read, Eq, Ord, Generic, NFData)
 
 data Size
   = Size
-  { _sW :: !Int
-  , _sH :: !Int
+  { _sW :: {-# UNPACK #-} !Int
+  , _sH :: {-# UNPACK #-} !Int
   }
-  deriving (Show, Read, Eq, Ord)
+  deriving (Show, Read, Eq, Ord, Generic, NFData)
 
 makeLenses ''Point
 makeLenses ''Size
