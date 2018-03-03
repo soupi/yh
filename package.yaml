@@ -1,0 +1,79 @@
+name:                play
+version:             0.1.0.0
+license:             Apache-2.0
+author:              "Gil Mizrahi"
+maintainer:          "gilmi@posteo.net"
+copyright:           "2018 Gil Mizrahi"
+
+extra-source-files:
+- README.md
+
+dependencies:
+- base >= 4.7 && < 5
+- async
+- containers
+- transformers
+- mtl
+- text
+- bytestring
+- file-embed
+- vector
+- lens
+- bytestring
+- sdl2
+- linear
+
+library:
+  source-dirs: src
+  default-extensions:
+  - ConstraintKinds
+  - DataKinds
+  - DeriveFunctor
+  - EmptyDataDecls
+  - FlexibleContexts
+  - KindSignatures
+  - LambdaCase
+  - MultiParamTypeClasses
+  - MultiWayIf
+  - PatternGuards
+  - PatternSynonyms
+  - RankNTypes
+  - RecordWildCards
+  - NamedFieldPuns
+  - ScopedTypeVariables
+  - TupleSections
+  - ViewPatterns
+  - BangPatterns
+
+
+executables:
+  app:
+    main:                Main.hs
+    source-dirs:         app
+    dependencies:
+    - base
+    - optparse-generic
+    - play
+
+    ghc-options:
+    - -rtsopts
+
+    default-extensions:
+    - ConstraintKinds
+    - DataKinds
+    - DeriveFunctor
+    - EmptyDataDecls
+    - FlexibleContexts
+    - KindSignatures
+    - LambdaCase
+    - MultiParamTypeClasses
+    - MultiWayIf
+    - PatternGuards
+    - PatternSynonyms
+    - RankNTypes
+    - RecordWildCards
+    - NamedFieldPuns
+    - ScopedTypeVariables
+    - TupleSections
+    - ViewPatterns
+
