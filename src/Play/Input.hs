@@ -30,6 +30,8 @@ data Key
   | KeyDown
   | KeyLeft
   | KeyRight
+  | KeyA
+  | KeyB
   | KeyQuit
   deriving (Show, Read, Eq, Ord, Bounded, Enum, Generic, NFData)
 
@@ -48,6 +50,8 @@ defKeyMap = map swap
   , (SDL.ScancodeRight, KeyRight)
   , (SDL.ScancodeEscape, KeyQuit)
   , (SDL.ScancodeQ, KeyQuit)
+  , (SDL.ScancodeZ, KeyA)
+  , (SDL.ScancodeX, KeyB)
   ]
 
 makeEvents :: Keys -> [SDL.EventPayload] -> (SDL.Scancode -> Bool) -> [(Key, SDL.Scancode)] -> Keys
@@ -84,15 +88,13 @@ keyPressed key = maybe False (/= Idle) . M.lookup key . inputKeys
 keyIdle :: Key -> Input -> Bool
 keyIdle key = maybe False (== Idle) . M.lookup key . inputKeys
 
-{-
-keysToMovement :: Keys -> Point
-keysToMovement keys =
+keysToMovement :: Int -> Input -> Point
+keysToMovement speed keys =
   let
       singleMove k1 k2
-        | testKey k1 keys && not (testKey k2 keys) = -1
-        | testKey k2 keys && not (testKey k1 keys) =  1
+        | keyPressed k1 keys && not (keyPressed k2 keys) = -speed
+        | keyPressed k2 keys && not (keyPressed k1 keys) =  speed
         | otherwise = 0
       hori = singleMove KeyUp KeyDown
       vert = singleMove KeyLeft KeyRight
   in Point vert hori
--}

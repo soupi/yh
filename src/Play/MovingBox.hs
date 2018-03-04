@@ -22,7 +22,7 @@ data State
   = State
   { _pos :: !Point
   , _size :: !Size
-  , _dir :: !Point
+  , _speed :: !Int
   , _color :: !Word8
   }
   deriving Show
@@ -34,9 +34,9 @@ initStateState c = State.mkState (initState c) update render
 
 initState :: Word8 -> State
 initState c = State
-  { _pos = Point 0 0
+  { _pos = Point 350 260
   , _size = Size 100 80
-  , _dir = Point 5 5
+  , _speed = 5
   , _color = c
   }
 
@@ -44,28 +44,17 @@ update :: Input -> State -> Result (State.Command, State)
 update input state = do
   wSize <- _windowSize <$> SM.get
   let
+    move = keysToMovement (_speed state) input
     newState =
       state
-        & over (pos . pX) ((+) (state ^. dir . pX))
-        & over (pos . pY) ((+) (state ^. dir . pY))
-        & over (dir . pX)
-          (if
-             | (state ^. pos . pX) + (state ^. size . sW) >= (wSize ^. sW) -> negate . abs
-             | (state ^. pos . pX) <= 0 -> abs
-             | otherwise -> id
-          )
-        & over (dir . pY)
-          (if
-             | (state ^. pos . pY) + (state ^. size . sH) >= (wSize ^. sH) -> negate . abs
-             | (state ^. pos . pY) <= 0 -> abs
-             | otherwise -> id
-          )
+        & over (pos . pX) ((+) (move ^. pX))
+        & over (pos . pY) ((+) (move ^. pY))
   if
     | keyReleased KeyQuit input ->
       throwError []
-    | keyReleased KeyUp input ->
+    | keyReleased KeyA input ->
       pure (State.Push $ initStateState (state ^. color + 1), state)
-    | keyReleased KeyDown input ->
+    | keyReleased KeyB input ->
       pure (State.Done, state)
     | otherwise ->
       pure (State.None, newState)
