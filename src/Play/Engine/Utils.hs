@@ -1,7 +1,7 @@
 
 -- |
 -- a utility module
-module Play.Utils where
+module Play.Engine.Utils where
 
 import Prelude hiding (head)
 import qualified Data.List as List
@@ -9,8 +9,7 @@ import Control.Lens (over, (^.))
 import Data.List (group, sort)
 import Data.Function ((&))
 
-import Play.Types (Point)
-import Play.Types
+import Play.Engine.Types
 
 -- |
 -- replicate operation and chain it

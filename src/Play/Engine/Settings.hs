@@ -1,14 +1,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Play.Settings where
+module Play.Engine.Settings where
 
 import qualified SDL
 import qualified Control.Monad.State as SM
 import Control.Monad.Except
 
 import Data.Tuple
-import Play.Types
-import Play.Input
+import Play.Engine.Types
+import Play.Engine.Input
 import Control.Lens
 import GHC.Generics
 import Control.DeepSeq

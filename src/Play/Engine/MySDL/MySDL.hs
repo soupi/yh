@@ -2,7 +2,7 @@
 
 {-# LANGUAGE LambdaCase #-}
 
-module Play.MySDL.MySDL where
+module Play.Engine.MySDL.MySDL where
 
 import Data.Word (Word8)
 import Data.Text (Text)

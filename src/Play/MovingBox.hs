@@ -3,13 +3,13 @@
 module Play.MovingBox where
 
 import qualified SDL
-import qualified Play.MySDL.MySDL as MySDL
+import qualified Play.Engine.MySDL.MySDL as MySDL
 
 import Data.Word
-import Play.Types
-import Play.Input
-import Play.Settings
-import qualified Play.State as State
+import Play.Engine.Types
+import Play.Engine.Input
+import Play.Engine.Settings
+import qualified Play.Engine.State as State
 import qualified Control.Monad.State as SM
 import Control.Monad.Except
 import Control.Lens
@@ -49,6 +49,7 @@ update input state = do
       state
         & over (pos . pX) ((+) (move ^. pX))
         & over (pos . pY) ((+) (move ^. pY))
+  -- state stack manipulation
   if
     | keyReleased KeyQuit input ->
       throwError []

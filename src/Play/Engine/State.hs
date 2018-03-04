@@ -1,13 +1,13 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Play.State where
+module Play.Engine.State where
 
 import Prelude hiding (head)
 import SDL
-import Play.Utils
-import Play.Input
-import Play.Settings
+import Play.Engine.Utils
+import Play.Engine.Input
+import Play.Engine.Settings
 import Control.Monad.Except
 
 -----------

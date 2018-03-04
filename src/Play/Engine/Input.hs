@@ -1,10 +1,10 @@
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
 
-module Play.Input where
+module Play.Engine.Input where
 
 import Data.Tuple
 import qualified SDL
-import Play.Types
+import Play.Engine.Types
 import qualified Data.Map as M
 import GHC.Generics
 import Control.DeepSeq

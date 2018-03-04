@@ -4,14 +4,14 @@
 
 module Play.Run where
 
-import Play.Runner
+import Play.Engine.Runner
 
-import qualified Play.MySDL.MySDL as MySDL
-import Play.Input
-import Play.Types
-import Play.Utils
-import Play.Settings
-import qualified Play.State as State
+import qualified Play.Engine.MySDL.MySDL as MySDL
+import Play.Engine.Input
+import Play.Engine.Types
+import Play.Engine.Utils
+import Play.Engine.Settings
+import qualified Play.Engine.State as State
 import qualified Play.MovingBox as MB
 
 run :: IO ()

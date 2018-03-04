@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell, DeriveGeneric, DeriveAnyClass #-}
 
-module Play.Types where
+module Play.Engine.Types where
 
 import Control.Lens (makeLenses)
 import GHC.Generics
