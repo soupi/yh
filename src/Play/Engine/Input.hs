@@ -4,17 +4,18 @@ module Play.Engine.Input where
 
 import Data.Tuple
 import qualified SDL
+import qualified Play.Engine.MySDL.MySDL as MySDL
 import Play.Engine.Types
 import qualified Data.Map as M
 import GHC.Generics
 import Control.DeepSeq
 
 
-newtype Input
+data Input
   = Input
-  { inputKeys :: Keys
+  { inputKeys :: !Keys
+  , responses :: ![MySDL.Response]
   }
-  deriving Show
 
 type Keys = M.Map Key Action
 

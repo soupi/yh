@@ -13,7 +13,8 @@ import Play.Engine.Utils
 import Play.Engine.Settings
 import qualified Play.Engine.State as State
 import qualified Play.MovingBox as MB
+import qualified Play.Engine.LoadTextures as LT
 
 run :: IO ()
 run = do
-  runGame (Stack (MB.initStateState 1) [])
+  runGame (Stack (LT.initStateState ["assets/rin.png"] $ MB.initStateState) [])

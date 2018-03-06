@@ -3,6 +3,7 @@
 module Play.MovingBox where
 
 import qualified SDL
+import qualified SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL
 
 import Data.Word
@@ -23,21 +24,20 @@ data State
   { _pos :: !Point
   , _size :: !Size
   , _speed :: !Int
-  , _color :: !Word8
+  , _textures :: [(String, SDL.Texture)]
   }
-  deriving Show
 
 makeLenses ''State
 
-initStateState :: Word8 -> State.State
-initStateState c = State.mkState (initState c) update render
+initStateState :: [(String, SDL.Texture)] -> State.State
+initStateState texts = State.mkState (initState texts) update render
 
-initState :: Word8 -> State
-initState c = State
+initState :: [(String, SDL.Texture)] -> State
+initState ts = State
   { _pos = Point 350 260
   , _size = Size 100 80
   , _speed = 5
-  , _color = c
+  , _textures = ts
   }
 
 update :: Input -> State -> Result (State.Command, State)
@@ -54,7 +54,7 @@ update input state = do
     | keyReleased KeyQuit input ->
       throwError []
     | keyReleased KeyA input ->
-      pure (State.Push $ initStateState (state ^. color + 1), state)
+      pure (State.Push $ initStateState (state ^. textures), state)
     | keyReleased KeyB input ->
       pure (State.Done, state)
     | otherwise ->
@@ -64,11 +64,9 @@ render :: SDL.Renderer -> State -> IO ()
 render renderer state = do
   let rects = VS.fromList [toRect state]
   MySDL.setBGColor (Linear.V4 0 0 0 255) renderer
-  let
-    c = state ^. color * 50 `mod` 255
-  SDL.rendererDrawColor renderer SDL.$= Linear.V4 (c - 50 `mod` 255) (c `mod` 255) (c + 50 `mod` 255) 255
-  SDL.drawRects renderer rects
-  SDL.fillRects renderer rects
+  case state ^. textures of
+    [(_, texture)] -> SDL.copy renderer texture Nothing (Just $ toRect state)
+    ts -> putStrLn $ "unexpected amount of textures. expected 1 but got: " ++ show (length ts)
 
 toRect :: State -> SDL.Rectangle C.CInt
 toRect state =

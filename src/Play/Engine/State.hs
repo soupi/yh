@@ -4,11 +4,13 @@
 module Play.Engine.State where
 
 import Prelude hiding (head)
+import qualified Play.Engine.MySDL.MySDL as MySDL
 import SDL
 import Play.Engine.Utils
 import Play.Engine.Input
 import Play.Engine.Settings
 import Control.Monad.Except
+
 
 -----------
 -- State --
@@ -25,7 +27,7 @@ data StateF a
       :: Input
       -> a
       -- it might fail with a reason
-      -> Result (Command, a)
+      -> Result ([MySDL.Request], (Command, a))
   , render :: SDL.Renderer -> a -> IO ()
   }
 
@@ -39,16 +41,15 @@ mkState
   -> (Input -> a -> Result (Command, a))
   -> (SDL.Renderer -> a -> IO ())
   -> State
-mkState s u r = State (StateF s u r)
+mkState s u r = State (StateF s (\i a -> fmap pure $ u i a) r)
 
 -- a sample definition of a state. Does nothing.
 sample :: State
-sample = State
-  $ StateF
-  { state = ()
-  , update = \_ () -> pure (None, ())
-  , render = const pure
-  }
+sample = mkState
+  ()
+  (\_ () -> pure (None, ()))
+  (const pure)
+  
 
 
 -----------------
@@ -63,10 +64,10 @@ data Command
   | Replace State -- ^ Replace me with a new state
 
 -- | Update the top state on the stack
-updater :: Input -> Stack State -> Result (Stack State)
+updater :: Input -> Stack State -> Result ([MySDL.Request], Stack State)
 updater input states = do
-  (cmd, newState) <- updateState input (head states)
-  case cmd of
+  (reqs, (cmd, newState)) <- updateState input (head states)
+  (reqs,) <$> case cmd of
     Done -> case pop states of
       (_, Nothing) -> throwError ["Unexpected empty stack of states"]
       (_, Just rest) -> pure rest
@@ -75,11 +76,11 @@ updater input states = do
     Push otherState -> pure $ push otherState (replace newState states)
 
 -- | Update an existentially quantified State
-updateState :: Input -> State -> Result (Command, State)
+updateState :: Input -> State -> Result ([MySDL.Request], (Command, State))
 updateState input = \case
   State s ->
     flip fmap ((update s) input (state s)) $ \case
-      (cmd, newState) -> (cmd, State $ s { state = newState })
+      (reqs, (cmd, newState)) -> (reqs, (cmd, State $ s { state = newState }))
 
 -- | Render the top state on the stack
 renderer :: SDL.Renderer -> Stack State -> IO ()

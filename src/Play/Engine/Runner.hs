@@ -10,6 +10,7 @@ import qualified SDL
 import qualified Linear
 import Control.Lens
 import Control.DeepSeq
+import Control.Concurrent.STM.TQueue
 
 import qualified Play.Engine.MySDL.MySDL as MySDL
 import Play.Engine.Input
@@ -29,24 +30,27 @@ runGame w = do
   putStrLn "Goodbye."
 
 run :: Settings -> Stack State.State -> IO ()
-run settings stack =
+run settings stack = do
+  responsesQueue <- newTQueueIO
   void $ MySDL.withWindow "Game" (MySDL.myWindowConfig (Linear.V2 (winSize sW) (winSize sH))) $
     flip MySDL.withRenderer
-      (setBGColorBlack >=> MySDL.apploop (settings, stack) update . (\ren -> render ren . snd))
+      (setBGColorBlack >=> \(window, ren) -> MySDL.apploop responsesQueue ren (settings, stack) update (render (window, ren) . snd))
   where
     winSize l = fromIntegral $ settings ^. windowSize . l
 
 update
-  :: [SDL.EventPayload]
+  :: [MySDL.Response]
+  -> [SDL.EventPayload]
   -> (SDL.Scancode -> Bool)
   -> (Settings, Stack State.State)
-  -> IO (Either [String] (Settings, Stack State.State))
-update payload keyPressed (settings, stack) =
+  -> IO (Either [String] ([MySDL.Request], (Settings, Stack State.State)))
+update responses payload keyPressed (settings, stack) =
   let
     keys = makeEvents (_keyStats settings) payload keyPressed (_keyMap settings)
   in pure
+    . fmap (\(setts, (reqs, states)) -> (reqs, (setts, states)))
     . (keys `deepseq` runResult $! set keyStats keys settings)
-    $ State.updater (Input keys) stack
+    $ State.updater (Input keys responses) stack
 
 
 render :: (SDL.Window, SDL.Renderer) -> Stack State.State -> IO ()

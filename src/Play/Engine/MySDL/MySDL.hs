@@ -4,16 +4,22 @@
 
 module Play.Engine.MySDL.MySDL where
 
+import Data.Maybe
 import Data.Word (Word8)
 import Data.Text (Text)
+import Control.Exception
 import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Word as Word
 import qualified Foreign.C.Types as C
 import qualified SDL
+import qualified SDL.Image as SDLI
 import qualified Linear
 import System.IO
 import Control.Concurrent
+import Control.Concurrent.STM.TQueue
+import Control.Concurrent.STM
+import Control.Concurrent.Async
 
 import Debug.Trace
 
@@ -32,6 +38,7 @@ withWindow title winConf go = do
   result <- go window
 
   SDL.destroyWindow window
+  SDLI.quit
   SDL.quit
 
   pure result
@@ -50,21 +57,25 @@ withRenderer window go = do
 -- | App loop: takes the current world and functions that updates the world renders it
 -- manage ticks, events and loop
 apploop
-  :: a
-  -> ([SDL.EventPayload] -> (SDL.Scancode -> Bool) -> a -> IO (Either [String] a))
+  :: TQueue Response
+  -> SDL.Renderer
+  -> a
+  -> ([Response] -> [SDL.EventPayload] -> (SDL.Scancode -> Bool) -> a -> IO (Either [String] ([Request], a)))
   -> (a -> IO ())
   -> IO a
-apploop world update render = do
+apploop responsesQueue renderer world update render = do
   events <- collectEvents
   keyState <- SDL.getKeyboardState
-  update events keyState world >>= \case
+  responses <- fmap (maybe [] (:[])) $ atomically $ tryReadTQueue responsesQueue
+  update responses events keyState world >>= \case
     Left errs ->
       liftIO $ mapM (hPutStrLn stderr) errs >> pure world
-    Right newWorld -> do
+    Right (reqs, newWorld) -> do
       render newWorld
+      async $ mapConcurrently_ (runRequest responsesQueue renderer) reqs
       if checkEvent SDL.QuitEvent events
       then pure world
-      else apploop newWorld update render
+      else apploop responsesQueue renderer newWorld update render
 
 setBGColor :: MonadIO m => Linear.V4 Word8 -> SDL.Renderer -> m SDL.Renderer
 setBGColor color renderer = do
@@ -85,3 +96,18 @@ collectEvents = SDL.pollEvent >>= \case
 -- | Checks if specific event happend
 checkEvent :: SDL.EventPayload -> [SDL.EventPayload] -> Bool
 checkEvent = elem
+
+
+data Request
+  = LoadTextures ![FilePath]
+
+data Response
+  = TexturesLoaded [(String, SDL.Texture)]
+  | Exception String
+
+runRequest :: TQueue Response -> SDL.Renderer -> Request -> IO ()
+runRequest queue renderer = \case
+  LoadTextures files -> flip catch (\(SomeException e) -> atomically $ writeTQueue queue $ Exception $ show e) $ do
+    results <- mapConcurrently (\f -> (f,) <$> SDLI.loadTexture renderer f) files
+    atomically $ writeTQueue queue (TexturesLoaded results)
+

@@ -21,8 +21,11 @@ dependencies:
 - lens
 - bytestring
 - sdl2
+- sdl2-image
 - linear
 - deepseq
+- stm
+- async
 
 library:
   source-dirs: src
