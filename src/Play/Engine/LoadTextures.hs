@@ -26,16 +26,16 @@ data State
   = State
   { _color :: Word8
   , _timer :: Int
-  , _filepaths :: [FilePath]
-  , _nextState :: [(FilePath, SDL.Texture)] -> State.State
+  , _filepaths :: [(String, FilePath)]
+  , _nextState :: [(String, SDL.Texture)] -> Result State.State
   }
 
 makeLenses ''State
 
-initStateState :: [FilePath] -> ([(FilePath, SDL.Texture)] -> State.State) -> State.State
-initStateState files next = State.State $ State.StateF (initState files next) update render
+mkState :: [(String, FilePath)] -> ([(String, SDL.Texture)] -> Result State.State) -> State.State
+mkState files next = State.State $ State.StateF (initState files next) update render
 
-initState :: [FilePath] -> ([(FilePath, SDL.Texture)] -> State.State) -> State
+initState :: [(String, FilePath)] -> ([(String, SDL.Texture)] -> Result State.State) -> State
 initState = State 0 180
 
 update :: Input -> State -> Result ([MySDL.Request], (State.Command, State))
@@ -45,7 +45,9 @@ update input s@(State c timer files next) =
   case (files, responses input) of
     ([], []) -> pure ([], (State.None, set color 100 s))
     ([], [MySDL.Exception e]) -> throwError [e]
-    ([], [MySDL.TexturesLoaded textures]) -> pure ([], (State.Replace $ next textures, s))
+    ([], [MySDL.TexturesLoaded textures]) -> do
+      next' <- next textures
+      pure ([], (State.Replace next', s))
     ([], rs) -> throwError ["Unexpected number of responses: " ++ show (length rs)]
     (files, _) -> pure ([MySDL.LoadTextures files], (State.None, set filepaths [] s))
 

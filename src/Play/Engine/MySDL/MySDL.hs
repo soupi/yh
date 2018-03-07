@@ -99,7 +99,7 @@ checkEvent = elem
 
 
 data Request
-  = LoadTextures ![FilePath]
+  = LoadTextures ![(String, FilePath)]
 
 data Response
   = TexturesLoaded [(String, SDL.Texture)]
@@ -108,6 +108,6 @@ data Response
 runRequest :: TQueue Response -> SDL.Renderer -> Request -> IO ()
 runRequest queue renderer = \case
   LoadTextures files -> flip catch (\(SomeException e) -> atomically $ writeTQueue queue $ Exception $ show e) $ do
-    results <- mapConcurrently (\f -> (f,) <$> SDLI.loadTexture renderer f) files
+    results <- mapConcurrently (\(n, f) -> (n,) <$> SDLI.loadTexture renderer f) files
     atomically $ writeTQueue queue (TexturesLoaded results)
 

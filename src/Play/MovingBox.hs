@@ -19,42 +19,59 @@ import qualified Foreign.C.Types as C (CInt)
 import qualified Linear
 import qualified Linear.Affine as Linear
 
-data State
-  = State
+
+data MainChar
+  = MainChar
   { _pos :: !Point
   , _size :: !Size
   , _speed :: !Int
-  , _textures :: [(String, SDL.Texture)]
+  , _texture :: SDL.Texture
   }
 
+data State
+  = State
+  { _mc :: MainChar
+  }
+
+makeLenses ''MainChar
 makeLenses ''State
 
-initStateState :: [(String, SDL.Texture)] -> State.State
-initStateState texts = State.mkState (initState texts) update render
+mkState :: [(String, SDL.Texture)] -> Result State.State
+mkState texts = do
+  state <- initState texts
+  pure $ State.mkState
+    state
+    update
+    render
 
-initState :: [(String, SDL.Texture)] -> State
-initState ts = State
-  { _pos = Point 350 260
-  , _size = Size 100 80
-  , _speed = 5
-  , _textures = ts
-  }
+initState :: [(String, SDL.Texture)] -> Result State
+initState ts = do
+  case lookup "rin" ts of
+    Nothing ->
+      throwError ["Texture not found: rin"]
+    Just t -> pure $ State $ MainChar
+      { _pos = Point 350 260
+      , _size = Size 100 80
+      , _speed = 5
+      , _texture = t
+      }
 
 update :: Input -> State -> Result (State.Command, State)
 update input state = do
   wSize <- _windowSize <$> SM.get
   let
-    move = keysToMovement (_speed state) input
+    move = keysToMovement (state ^. mc . speed) input
     newState =
       state
-        & over (pos . pX) ((+) (move ^. pX))
-        & over (pos . pY) ((+) (move ^. pY))
+        & over (mc . pos . pX) ((+) (move ^. pX))
+        & over (mc . pos . pY) ((+) (move ^. pY))
   -- state stack manipulation
   if
     | keyReleased KeyQuit input ->
       throwError []
-    | keyReleased KeyA input ->
-      pure (State.Push $ initStateState (state ^. textures), state)
+    | keyReleased KeyA input -> do
+      next <- mkState [("rin", state ^. mc . texture)]
+      pure (State.Push next, state)
     | keyReleased KeyB input ->
       pure (State.Done, state)
     | otherwise ->
@@ -62,14 +79,11 @@ update input state = do
 
 render :: SDL.Renderer -> State -> IO ()
 render renderer state = do
-  let rects = VS.fromList [toRect state]
   MySDL.setBGColor (Linear.V4 0 0 0 255) renderer
-  case state ^. textures of
-    [(_, texture)] -> SDL.copy renderer texture Nothing (Just $ toRect state)
-    ts -> putStrLn $ "unexpected amount of textures. expected 1 but got: " ++ show (length ts)
+  SDL.copy renderer (state ^. mc . texture) Nothing (Just $ toRect $ state ^. mc)
 
-toRect :: State -> SDL.Rectangle C.CInt
-toRect state =
+toRect :: MainChar -> SDL.Rectangle C.CInt
+toRect mc =
   SDL.Rectangle
-    (Linear.P . uncurry Linear.V2 . over both fromIntegral . pointToTuple $ state ^. pos)
-    (uncurry Linear.V2 . over both fromIntegral . sizeToTuple $ state ^. size)
+    (Linear.P . uncurry Linear.V2 . over both fromIntegral . pointToTuple $ mc ^. pos)
+    (uncurry Linear.V2 . over both fromIntegral . sizeToTuple $ mc ^. size)

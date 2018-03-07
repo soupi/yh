@@ -17,4 +17,4 @@ import qualified Play.Engine.LoadTextures as LT
 
 run :: IO ()
 run = do
-  runGame (Stack (LT.initStateState ["assets/rin.png"] $ MB.initStateState) [])
+  runGame (Stack (LT.mkState [("rin", "assets/rin.png")] $ MB.mkState) [])
