@@ -12,6 +12,7 @@ dependencies:
 - base >= 4.7 && < 5
 - async
 - containers
+- dlist
 - transformers
 - mtl
 - text

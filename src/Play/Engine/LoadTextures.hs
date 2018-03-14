@@ -36,7 +36,7 @@ mkState :: [(String, FilePath)] -> ([(String, SDL.Texture)] -> Result State.Stat
 mkState files next = State.State $ State.StateF (initState files next) update render
 
 initState :: [(String, FilePath)] -> ([(String, SDL.Texture)] -> Result State.State) -> State
-initState = State 0 180
+initState = State 0 120
 
 update :: Input -> State -> Result ([MySDL.Request], (State.Command, State))
 update _ s@(State c t _ _)
