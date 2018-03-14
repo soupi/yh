@@ -1,13 +1,15 @@
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Play.ShootingBox where
 
 import qualified SDL
-import qualified SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL
 
-import Data.Word
-import Data.Foldable
+import Play.Engine.Utils
 import Play.Engine.Types
 import Play.Engine.Input
 import Play.Engine.Settings
@@ -15,11 +17,14 @@ import qualified Play.Engine.State as State
 import qualified Control.Monad.State as SM
 import Control.Monad.Except
 import Control.Lens
-import qualified Data.Vector.Storable as VS
 import qualified Foreign.C.Types as C (CInt)
 import qualified Linear
 import qualified Linear.Affine as Linear
 import qualified Data.DList as DL
+
+
+import Play.Bullet
+
 
 data MainChar
   = MainChar
@@ -32,11 +37,12 @@ data MainChar
 data State
   = State
   { _mc :: MainChar
-  , _bullets :: DL.DList MainChar
+  , _bullets :: DL.DList Bullet
+  , _newBullet :: Point -> Bullet
   }
 
-makeLenses ''MainChar
-makeLenses ''State
+makeFieldsNoPrefix ''MainChar
+makeFieldsNoPrefix ''State
 
 mkState :: [(String, SDL.Texture)] -> Result State.State
 mkState texts = do
@@ -55,14 +61,8 @@ initState ts = do
       pure $ State
         (g 380 500 96 96)
         (DL.fromList [])
+        (mkBullet t 8 5)
       where
-        f x y =
-          MainChar
-            { _pos = Point ((300+) $ x * 10) (400 + (y * 20))
-            , _size = Size 30 30
-            , _speed = 3
-            , _texture = t
-            }
         g x y sw sh =
           MainChar
             { _pos = Point x y
@@ -77,14 +77,9 @@ update input state = do
   let
     move = keysToMovement 5 input
 
-    updateBullet b =
-      if b ^. pos . pY < 5
-        then []
-        else [over (pos . pY) (flip (-) (b ^. speed)) b]
-
     addBullets
       | keyClicked KeyA input =
-        DL.append $ DL.fromList [set size (Size 30 30) (state ^. mc)]
+        DL.append $ DL.fromList [(state ^. newBullet) (state ^. mc . pos)]
       | otherwise = id
 
     newState =
@@ -107,9 +102,6 @@ update input state = do
     | otherwise ->
       pure (State.None, newState)
 
-updateList :: (a -> [a]) -> DL.DList a -> DL.DList a
-updateList f = DL.foldr (\x acc -> DL.fromList (f x) `DL.append` acc) DL.empty
-
 render :: SDL.Renderer -> State -> IO ()
 render renderer state = do
   MySDL.setBGColor (Linear.V4 0 0 0 255) renderer
@@ -117,8 +109,8 @@ render renderer state = do
   forM_ (state ^. bullets) $ \bullet ->
     SDL.copy renderer (bullet ^. texture) Nothing (Just $ toRect bullet)
 
-toRect :: MainChar -> SDL.Rectangle C.CInt
-toRect mc =
+toRect :: (HasSize a Size, HasPos a Point) => a -> SDL.Rectangle C.CInt
+toRect rect =
   SDL.Rectangle
-    (Linear.P . uncurry Linear.V2 . over both fromIntegral . pointToTuple $ mc ^. pos)
-    (uncurry Linear.V2 . over both fromIntegral . sizeToTuple $ mc ^. size)
+    (Linear.P . uncurry Linear.V2 . over both fromIntegral . pointToTuple $ rect ^. pos)
+    (uncurry Linear.V2 . over both fromIntegral . sizeToTuple $ rect ^. size)

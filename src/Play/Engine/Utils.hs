@@ -8,6 +8,7 @@ import qualified Data.List as List
 import Control.Lens (over, (^.))
 import Data.List (group, sort)
 import Data.Function ((&))
+import qualified Data.DList as DL
 
 import Play.Engine.Types
 
@@ -46,9 +47,6 @@ supplyBoth = (=<<)
 (.:) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 (.:) f g x y = f (g x y)
 
-----------------
--- Formatting
----------------
 
 addPoint :: Point -> Point -> Point
 addPoint = apToPoint (+)
@@ -61,7 +59,8 @@ apToPoint f !p1 !p2 =
   p1 & over pX (f (p2 ^. pX))
      & over pY (f (p2 ^. pY))
 
-
+updateList :: (a -> [a]) -> DL.DList a -> DL.DList a
+updateList f = DL.foldr (\x acc -> DL.fromList (f x) `DL.append` acc) DL.empty
 
 -----------
 -- Stack --

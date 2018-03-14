@@ -1,0 +1,36 @@
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE TemplateHaskell #-}
+
+module Play.Bullet where
+
+import qualified SDL
+
+import Play.Engine.Types
+import Control.Lens
+
+data Bullet
+  = Bullet
+  { _pos :: !Point
+  , _size :: !Size
+  , _speed :: !Int
+  , _damage :: !Int
+  , _texture :: SDL.Texture
+  }
+
+mkBullet :: SDL.Texture -> Int -> Int -> Point -> Bullet
+mkBullet txt spd dmg position = Bullet
+  { _pos = position
+  , _size = Size 24 24
+  , _speed = spd
+  , _damage = dmg
+  , _texture = txt
+  }
+
+makeFieldsNoPrefix ''Bullet
+
+updateBullet b =
+  if b ^. pos . pY < 5
+    then []
+    else [over (pos . pY) (flip (-) (b ^. speed)) b]
