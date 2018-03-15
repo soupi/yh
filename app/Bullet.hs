@@ -3,7 +3,7 @@
 {-# LANGUAGE DuplicateRecordFields  #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Play.Bullet where
+module Bullet where
 
 import qualified SDL
 
@@ -19,6 +19,8 @@ data Bullet
   , _texture :: SDL.Texture
   }
 
+makeFieldsNoPrefix ''Bullet
+
 mkBullet :: SDL.Texture -> Int -> Int -> Point -> Bullet
 mkBullet txt spd dmg position = Bullet
   { _pos = position
@@ -27,8 +29,6 @@ mkBullet txt spd dmg position = Bullet
   , _damage = dmg
   , _texture = txt
   }
-
-makeFieldsNoPrefix ''Bullet
 
 updateBullet b =
   if b ^. pos . pY < 5

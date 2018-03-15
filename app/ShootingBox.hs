@@ -4,7 +4,7 @@
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Play.ShootingBox where
+module ShootingBox where
 
 import qualified SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL
@@ -13,17 +13,16 @@ import Play.Engine.Utils
 import Play.Engine.Types
 import Play.Engine.Input
 import Play.Engine.Settings
-import qualified Play.Engine.State as State
-import qualified Control.Monad.State as SM
 import Control.Monad.Except
 import Control.Lens
-import qualified Foreign.C.Types as C (CInt)
+import qualified Play.Engine.State as State
+import qualified Control.Monad.State as SM
 import qualified Linear
-import qualified Linear.Affine as Linear
 import qualified Data.DList as DL
 
 
-import Play.Bullet
+import Bullet
+import qualified Play.Engine.ScrollingBackground as SBG
 
 
 data MainChar
@@ -39,6 +38,7 @@ data State
   { _mc :: MainChar
   , _bullets :: DL.DList Bullet
   , _newBullet :: Point -> Bullet
+  , _bg :: SBG.SBG
   }
 
 makeFieldsNoPrefix ''MainChar
@@ -52,23 +52,30 @@ mkState texts = do
     update
     render
 
+wantedAssets :: [(String, FilePath)]
+wantedAssets =
+  [ ("bg", "assets/bg.png")
+  , ("rin", "assets/rin.png")
+  ]
+
 initState :: [(String, SDL.Texture)] -> Result State
 initState ts = do
-  case lookup "rin" ts of
+  case (,) <$> lookup "rin" ts <*> lookup "bg" ts of
     Nothing ->
-      throwError ["Texture not found: rin"]
-    Just t ->
+      throwError ["Texture not found: rin or bg"]
+    Just (rint, bgt) ->
       pure $ State
-        (g 380 500 96 96)
+        (g 380 800 96 96)
         (DL.fromList [])
-        (mkBullet t 8 5)
+        (mkBullet rint 8 5)
+        (SBG.mkSBG bgt 1 (Size 800 1000) (Point 0 0))
       where
         g x y sw sh =
           MainChar
             { _pos = Point x y
             , _size = Size sw sh
             , _speed = 3
-            , _texture = t
+            , _texture = rint
             }
 
 update :: Input -> State -> Result (State.Command, State)
@@ -89,6 +96,7 @@ update input state = do
           . over pY ((+) (move ^. pY))
           )
         & over bullets (updateList updateBullet . addBullets)
+        & over bg SBG.updateSBG
 
   -- state stack manipulation
   if
@@ -105,12 +113,7 @@ update input state = do
 render :: SDL.Renderer -> State -> IO ()
 render renderer state = do
   MySDL.setBGColor (Linear.V4 0 0 0 255) renderer
-  SDL.copy renderer (state ^. mc ^. texture) Nothing (Just $ toRect $ state ^. mc)
+  SBG.render renderer (state ^. bg)
+  SDL.copy renderer (state ^. mc . texture) Nothing (Just $ toRect (state ^. mc . pos) (state ^. mc . size))
   forM_ (state ^. bullets) $ \bullet ->
-    SDL.copy renderer (bullet ^. texture) Nothing (Just $ toRect bullet)
-
-toRect :: (HasSize a Size, HasPos a Point) => a -> SDL.Rectangle C.CInt
-toRect rect =
-  SDL.Rectangle
-    (Linear.P . uncurry Linear.V2 . over both fromIntegral . pointToTuple $ rect ^. pos)
-    (uncurry Linear.V2 . over both fromIntegral . sizeToTuple $ rect ^. size)
+    SDL.copy renderer (bullet ^. texture) Nothing (Just $ toRect (bullet ^. pos) (bullet ^. size))

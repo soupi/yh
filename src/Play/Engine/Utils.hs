@@ -3,6 +3,12 @@
 -- a utility module
 module Play.Engine.Utils where
 
+import qualified SDL
+import qualified Foreign.C.Types as C (CInt)
+import qualified Linear
+import qualified Linear.Affine as Linear
+import Control.Lens
+
 import Prelude hiding (head)
 import qualified Data.List as List
 import Control.Lens (over, (^.))
@@ -61,6 +67,13 @@ apToPoint f !p1 !p2 =
 
 updateList :: (a -> [a]) -> DL.DList a -> DL.DList a
 updateList f = DL.foldr (\x acc -> DL.fromList (f x) `DL.append` acc) DL.empty
+
+
+toRect :: Point -> Size -> SDL.Rectangle C.CInt
+toRect posi sz =
+  SDL.Rectangle
+    (Linear.P . uncurry Linear.V2 . over both fromIntegral . pointToTuple $ posi)
+    (uncurry Linear.V2 . over both fromIntegral . sizeToTuple $ sz)
 
 -----------
 -- Stack --

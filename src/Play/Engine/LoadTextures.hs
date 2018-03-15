@@ -24,8 +24,7 @@ import Control.Concurrent.Async
 
 data State
   = State
-  { _color :: Word8
-  , _timer :: Int
+  { _timer :: Int
   , _filepaths :: [(String, FilePath)]
   , _nextState :: [(String, SDL.Texture)] -> Result State.State
   }
@@ -36,14 +35,14 @@ mkState :: [(String, FilePath)] -> ([(String, SDL.Texture)] -> Result State.Stat
 mkState files next = State.State $ State.StateF (initState files next) update render
 
 initState :: [(String, FilePath)] -> ([(String, SDL.Texture)] -> Result State.State) -> State
-initState = State 0 120
+initState = State 90
 
 update :: Input -> State -> Result ([MySDL.Request], (State.Command, State))
-update _ s@(State c t _ _)
-  | t > 0 = pure ([], (State.None, s & over timer (\x -> x - 1) & set color (c + 1)))
-update input s@(State c timer files next) =
+update _ s@(State t _ _)
+  | t > 0 = pure ([], (State.None, s & over timer (\x -> x - 1)))
+update input s@(State timer files next) =
   case (files, responses input) of
-    ([], []) -> pure ([], (State.None, set color 100 s))
+    ([], []) -> pure ([], (State.None, s))
     ([], [MySDL.Exception e]) -> throwError [e]
     ([], [MySDL.TexturesLoaded textures]) -> do
       next' <- next textures
@@ -53,5 +52,5 @@ update input s@(State c timer files next) =
 
 render :: SDL.Renderer -> State -> IO ()
 render renderer state =
-  let c = state ^. color `mod` 255
-  in void $ MySDL.setBGColor (Linear.V4 (50 `mod` 255) (c `mod` 255) (c + 50 `mod` 255) 255) renderer
+  let c = fromIntegral $ state ^. timer
+  in void $ MySDL.setBGColor (Linear.V4 (20 `mod` 255) ((10 + (c `div` 3)) `mod` 255) ((20 + (c `div` 2)) `mod` 255) 255) renderer

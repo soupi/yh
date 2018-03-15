@@ -23,10 +23,10 @@ import qualified Play.Engine.State as State
 -- Logic --
 -----------
 
-runGame :: Stack State.State -> IO ()
-runGame w = do
+runGame :: Settings -> Stack State.State -> IO ()
+runGame sets w = do
   putStrLn "Hello Game!"
-  _ <- run def w
+  _ <- run sets w
   putStrLn "Goodbye."
 
 run :: Settings -> Stack State.State -> IO ()
