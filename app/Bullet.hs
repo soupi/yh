@@ -31,7 +31,10 @@ mkBullet txt spd dmg position = Bullet
   , _texture = txt
   }
 
-updateBullet wsize b =
-  if b ^. pos . pY < 0 || b ^. pos . pY > wsize ^. sH
-    then []
-    else [over (pos . pY) (flip (-) (b ^. speed)) b]
+updateBullet wsize entities b
+  | any (isTouching b) entities =
+    (True, [])
+  | b ^. pos . pY < 0 || b ^. pos . pY > wsize ^. sH =
+    (False, [])
+  | otherwise =
+    (False, [over (pos . pY) (flip (-) (b ^. speed)) b])

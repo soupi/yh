@@ -23,6 +23,7 @@ import qualified Data.DList as DL
 
 import Play.Engine.Types
 
+
 -- |
 -- replicate operation and chain it
 replicateMChain :: Monad m => Int -> (a -> m a) -> a -> m a
@@ -73,6 +74,12 @@ apToPoint f !p1 !p2 =
 updateList :: (a -> [a]) -> DL.DList a -> DL.DList a
 updateList f = DL.foldr (\x acc -> DL.fromList (f x) `DL.append` acc) DL.empty
 
+updateListWith :: b -> (b -> b -> b) -> (a -> (b, [a])) -> DL.DList a -> (b, DL.DList a)
+updateListWith start combine f = flip DL.foldr (start, DL.empty) $ \x acc ->
+  case (f x, acc) of
+    ((b, []), (bacc, aacc)) -> (combine bacc b, aacc)
+    ((b, xs), (bacc, aacc)) -> (combine bacc b, DL.fromList xs `DL.append` aacc)
+
 
 toRect :: Point -> Size -> SDL.Rectangle C.CInt
 toRect posi sz =
@@ -88,7 +95,19 @@ data HasPosSize
 
 makeFieldsNoPrefix ''HasPosSize
 
-
+isTouching :: (HasSize a Size, HasPos a Point, HasSize b Size, HasPos b Point) => a -> b -> Bool
+isTouching a b =
+  let
+    getCenter x = (x ^. pos) `addPoint` Point ((x ^. size . sW) `div` 2) ((x ^. size . sH) `div` 2)
+    aCenter = getCenter a
+    bCenter = getCenter b
+    aRadius = (a ^. size . sW) `div` 2
+    bRadius = (b ^. size . sW) `div` 2
+    distX = (aCenter ^. pX) - (bCenter ^. pX)
+    distY = (aCenter ^. pY) - (bCenter ^. pY)
+    dist = sqrt $ fromIntegral ((distX * distX) + (distY * distY))
+  in
+    dist < fromIntegral (aRadius + bRadius)
 
 fixPos :: (HasSize a Size, HasPos a Point) => Size -> a -> a
 fixPos wsize entity =

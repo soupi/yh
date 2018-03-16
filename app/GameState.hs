@@ -14,6 +14,7 @@ import Play.Engine.Utils
 import Play.Engine.Types
 import Play.Engine.Input
 import Play.Engine.Settings
+import Control.Monad
 import Control.Monad.Except
 import Control.Lens
 import qualified Play.Engine.State as State
@@ -80,13 +81,21 @@ update input state = do
   (mc', addMCBullets) <- SB.update input (state ^. mc)
   (enemy', addEnemyBullets) <- Enemy.update input (state ^. enemy)
   let
+    (enemyHit, mcBullets') =
+      updateListWith False (||) (updateBullet wSize [state ^. enemy]) . addMCBullets $ state ^. mcBullets
+    (mcHit, enemyBullets') =
+      updateListWith False (||) (updateBullet wSize [state ^. mc]) . addEnemyBullets $ state ^. enemyBullets
+    -- mcHit = (DL.foldr (\bullet acc -> acc || isTouching (state ^. mc) bullet) False (state ^. enemyBullets))
+    -- enemyHit = (DL.foldr (\bullet acc -> acc || isTouching (state ^. enemy) bullet) False (state ^. mcBullets))
+  let
     newState =
       state
         & set mc mc'
         & set enemy enemy'
-        & over mcBullets (updateList (updateBullet wSize) . addMCBullets)
-        & over enemyBullets (updateList (updateBullet wSize) . addEnemyBullets)
+        & set mcBullets mcBullets'
+        & set enemyBullets enemyBullets'
         & over bg SBG.updateSBG
+
 
   -- state stack manipulation
   if
