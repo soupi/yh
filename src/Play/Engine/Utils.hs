@@ -1,3 +1,8 @@
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 -- |
 -- a utility module
@@ -74,6 +79,37 @@ toRect posi sz =
   SDL.Rectangle
     (Linear.P . uncurry Linear.V2 . over both fromIntegral . pointToTuple $ posi)
     (uncurry Linear.V2 . over both fromIntegral . sizeToTuple $ sz)
+
+data HasPosSize
+  = HasPosSize
+  { _pos :: !Point
+  , _size :: !Size
+  }
+
+makeFieldsNoPrefix ''HasPosSize
+
+
+
+fixPos :: (HasSize a Size, HasPos a Point) => Size -> a -> a
+fixPos wsize entity =
+  let
+    x = entity ^. pos . pX
+    y = entity ^. pos . pY
+    x' =
+      if x <= 0
+        then 0
+        else if x + (entity^.size.sW) <= (wsize^.sW)
+          then x
+          else (wsize^.sW) - (entity^.size.sW)
+    y' =
+      if y <= 0
+        then 0
+        else if y + (entity^.size.sH) <= (wsize^.sH)
+          then y
+          else (wsize^.sH) - (entity^.size.sH)
+  in
+    set pos (Point x' y') entity
+
 
 -----------
 -- Stack --

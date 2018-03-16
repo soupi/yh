@@ -49,8 +49,8 @@ mkMainChar ts = do
       pure $
         MainChar
           { _pos = Point 380 800
-          , _size = Size 96 96
-          , _speed = 3
+          , _size = Size 64 64
+          , _speed = 4
           , _texture = rint
           }
 
@@ -62,37 +62,19 @@ update input mc = do
 
     addBullets
       | keyClicked KeyA input =
-        DL.append $ DL.fromList [mkBullet (mc ^. texture) 8 0 ((mc ^. pos) `addPoint` Point (mc ^. size . sW `div` 2) 0)]
+        DL.append $ DL.fromList
+          [ mkBullet (mc ^. texture) 8 0 ((mc ^. pos) `addPoint` Point (mc ^. size . sW `div` 2) 0)
+          --[ mkBullet (mc ^. texture) 8 0 ((mc ^. pos) `addPoint` Point (mc ^. size . sW `div` 4) 0)
+          --, mkBullet (mc ^. texture) 8 0 ((mc ^. pos) `addPoint` Point ((mc ^. size . sW `div` 4) * 3) 0)
+          ]
       | otherwise = id
 
-        
   pure
     ( mc
       & over pos (`addPoint` move)
-      & normalizePos wsize
+      & fixPos wsize
     , addBullets
     )
-
-normalizePos :: Size -> MainChar -> MainChar
-normalizePos wsize mc =
-  let
-    x = mc ^. pos . pX
-    y = mc ^. pos . pY
-    x' =
-      if x <= 0
-        then 0
-        else if x + (mc^.size.sW) <= (wsize^.sW)
-          then x
-          else (wsize^.sW) - (mc^.size.sW)
-    y' =
-      if y <= 0
-        then 0
-        else if y + (mc^.size.sH) <= (wsize^.sH)
-          then y
-          else (wsize^.sH) - (mc^.size.sH)
-  in
-    set pos (Point x' y') mc
-
 
 render :: SDL.Renderer -> MainChar -> IO ()
 render renderer mc =

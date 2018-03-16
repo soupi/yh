@@ -25,13 +25,16 @@ import qualified Data.DList as DL
 
 import Bullet
 import qualified ShootingBox as SB
+import qualified SimpleEnemy as Enemy
 import qualified Play.Engine.ScrollingBackground as SBG
 
 data State
   = State
-  { _mc :: SB.MainChar
-  , _bullets :: DL.DList Bullet
-  , _bg :: SBG.SBG
+  { _bg :: SBG.SBG
+  , _mc :: SB.MainChar
+  , _enemy :: Enemy.Enemy
+  , _mcBullets :: DL.DList Bullet
+  , _enemyBullets :: DL.DList Bullet
   , _textures :: [(String, SDL.Texture)]
   }
 
@@ -42,6 +45,7 @@ wantedAssets =
   [ ("bg", "assets/bg.png")
   ]
   ++ SB.wantedAssets
+  ++ Enemy.wantedAssets
 
 mkGameState :: State.State
 mkGameState = LT.mkState wantedAssets mkState
@@ -61,21 +65,27 @@ initState ts = do
       throwError ["Texture not found: bg"]
     Just bgt -> do
       mc' <- (SB.mkMainChar ts)
+      enemy' <- (Enemy.mkEnemy (Point 200 (-180)) ts)
       pure $ State
-        mc'
-        (DL.fromList [])
         (SBG.mkSBG bgt 1 (Size 800 1000) (Point 0 0))
+        mc'
+        enemy'
+        (DL.fromList [])
+        (DL.fromList [])
         ts
 
 update :: Input -> State -> Result (State.Command, State)
 update input state = do
   wSize <- _windowSize <$> SM.get
-  (mc', addBullets) <- SB.update input (state ^. mc)
+  (mc', addMCBullets) <- SB.update input (state ^. mc)
+  (enemy', addEnemyBullets) <- Enemy.update input (state ^. enemy)
   let
     newState =
       state
         & set mc mc'
-        & over bullets (updateList updateBullet . addBullets)
+        & set enemy enemy'
+        & over mcBullets (updateList (updateBullet wSize) . addMCBullets)
+        & over enemyBullets (updateList (updateBullet wSize) . addEnemyBullets)
         & over bg SBG.updateSBG
 
   -- state stack manipulation
@@ -92,5 +102,8 @@ render :: SDL.Renderer -> State -> IO ()
 render renderer state = do
   SBG.render renderer (state ^. bg)
   SB.render renderer (state ^. mc)
-  forM_ (state ^. bullets) $ \bullet ->
+  Enemy.render renderer (state ^. enemy)
+  forM_ (state ^. mcBullets) $ \bullet ->
+    SDL.copy renderer (bullet ^. texture) Nothing (Just $ toRect (bullet ^. pos) (bullet ^. size))
+  forM_ (state ^. enemyBullets) $ \bullet ->
     SDL.copy renderer (bullet ^. texture) Nothing (Just $ toRect (bullet ^. pos) (bullet ^. size))

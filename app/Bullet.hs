@@ -31,7 +31,7 @@ mkBullet txt spd dmg position = Bullet
   , _texture = txt
   }
 
-updateBullet b =
-  if b ^. pos . pY < 5
+updateBullet wsize b =
+  if b ^. pos . pY < 0 || b ^. pos . pY > wsize ^. sH
     then []
     else [over (pos . pY) (flip (-) (b ^. speed)) b]
