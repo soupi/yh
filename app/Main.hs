@@ -13,11 +13,11 @@ import Play.Engine.Utils
 import Play.Engine.Settings
 import qualified Play.Engine.State as State
 import qualified Play.Engine.LoadTextures as LT
-import qualified ShootingBox as SB
+import qualified GameState as SB
 
 main :: IO ()
 main = do
-  runGame settings (Stack (LT.mkState SB.wantedAssets $ SB.mkState) [])
+  runGame settings (Stack SB.mkGameState [])
 
 settings :: Settings
 settings = def
