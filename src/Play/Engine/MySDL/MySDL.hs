@@ -69,7 +69,7 @@ apploop responsesQueue renderer world update render = do
   responses <- fmap (maybe [] (:[])) $ atomically $ tryReadTQueue responsesQueue
   update responses events keyState world >>= \case
     Left errs ->
-      liftIO $ mapM (hPutStrLn stderr) errs >> pure world
+      liftIO $ mapM (hPutStrLn stderr . ("*** Error: " ++)) errs >> pure world
     Right (reqs, newWorld) -> do
       render newWorld
       async $ mapConcurrently_ (runRequest responsesQueue renderer) reqs

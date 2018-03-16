@@ -7,6 +7,7 @@ module Bullet where
 
 import qualified SDL
 
+import Play.Engine.Utils
 import Play.Engine.Types
 import Control.Lens
 
@@ -23,7 +24,7 @@ makeFieldsNoPrefix ''Bullet
 
 mkBullet :: SDL.Texture -> Int -> Int -> Point -> Bullet
 mkBullet txt spd dmg position = Bullet
-  { _pos = position
+  { _pos = position `addPoint` Point (-12) (-24)
   , _size = Size 24 24
   , _speed = spd
   , _damage = dmg
