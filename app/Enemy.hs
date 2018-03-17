@@ -4,7 +4,7 @@
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module SimpleEnemy where
+module Enemy where
 
 import qualified SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL

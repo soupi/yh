@@ -28,7 +28,7 @@ import qualified Data.DList as DL
 import Bullet hiding (update, render)
 import qualified Bullet
 import qualified ShootingBox as SB
-import qualified SimpleEnemy as Enemy
+import qualified Enemy as Enemy
 import qualified Play.Engine.ScrollingBackground as SBG
 
 data State
