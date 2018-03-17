@@ -33,6 +33,8 @@ data Key
   | KeyRight
   | KeyA
   | KeyB
+  | KeyC
+  | KeyD
   | KeyQuit
   deriving (Show, Read, Eq, Ord, Bounded, Enum, Generic, NFData)
 
@@ -53,6 +55,8 @@ defKeyMap = map swap
   , (SDL.ScancodeQ, KeyQuit)
   , (SDL.ScancodeZ, KeyA)
   , (SDL.ScancodeX, KeyB)
+  , (SDL.ScancodeC, KeyC)
+  , (SDL.ScancodeV, KeyD)
   ]
 
 makeEvents :: Keys -> [SDL.EventPayload] -> (SDL.Scancode -> Bool) -> [(Key, SDL.Scancode)] -> Keys

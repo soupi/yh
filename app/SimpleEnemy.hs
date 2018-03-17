@@ -74,7 +74,7 @@ update input enemy = do
       , enemy ^. hitTimer < 0
       , enemy ^. direction . pY == 0 =
         DL.append $ DL.fromList
-          [ mkBullet (enemy ^. texture) (-6) 0
+          [ mkBullet (enemy ^. texture) (-6) 0 255
             ((enemy ^. pos) `addPoint` Point (enemy ^. size . sW `div` 2) (enemy ^. size . sH))
           ]
       | otherwise = id
@@ -125,7 +125,7 @@ update input enemy = do
 
 checkHit :: DL.DList Bullet -> Enemy -> Enemy
 checkHit bullets enemy
-  | any (isJust . isTouching enemy) bullets && (enemy ^. hitTimer) < 15
+  | any (isJust . isTouching enemy) bullets
   = enemy
     & over health (flip (-) (DL.head bullets ^. damage))
     & \enemy' -> set hitTimer (if enemy' ^. health <= 0 then hitTimeout * 4 else hitTimeout) enemy'

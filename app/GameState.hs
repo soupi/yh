@@ -25,7 +25,8 @@ import qualified Linear
 import qualified Data.DList as DL
 
 
-import Bullet
+import Bullet hiding (update, render)
+import qualified Bullet
 import qualified ShootingBox as SB
 import qualified SimpleEnemy as Enemy
 import qualified Play.Engine.ScrollingBackground as SBG
@@ -86,10 +87,11 @@ update input state = do
     bimap mconcat (foldr (.) id) . unzip <$> traverse (Enemy.update input) (state ^. enemies)
   let
     (mcBullets', enemiesHit) =
-      updateListWith False (||) (updateBullet wSize (state ^. enemies)) . addMCBullets $ state ^. mcBullets
+      updateListWith False (||) (Bullet.update wSize (state ^. enemies)) . addMCBullets $ state ^. mcBullets
+
     (enemyBullets', mcHit) =
-      updateListWith False (||) (updateBullet wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
-  let
+      updateListWith False (||) (Bullet.update wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
+
     addEnemyM
       | state ^. enemyTimer == 0 && length (state ^. enemies) < 2
       = (:) <$> Enemy.mkEnemy (Point 200 (-180)) (state ^. textures)
@@ -112,10 +114,10 @@ update input state = do
 
   -- state stack manipulation
   if
-    | keyReleased KeyB input -> do
+    | keyReleased KeyC input -> do
       next <- mkState (state ^. textures)
       pure (State.Push next, state)
-    | keyReleased KeyQuit input ->
+    | keyReleased KeyD input ->
       pure (State.Done, state)
     | otherwise ->
       pure (State.None, newState)
@@ -125,7 +127,5 @@ render renderer state = do
   SBG.render renderer (state ^. bg)
   SB.render renderer (state ^. mc)
   traverse (Enemy.render renderer) (state ^. enemies)
-  forM_ (state ^. mcBullets) $ \bullet ->
-    SDL.copy renderer (bullet ^. texture) Nothing (Just $ toRect (bullet ^. pos) (bullet ^. size))
-  forM_ (state ^. enemyBullets) $ \bullet ->
-    SDL.copy renderer (bullet ^. texture) Nothing (Just $ toRect (bullet ^. pos) (bullet ^. size))
+  forM_ (state ^. mcBullets) (Bullet.render renderer)
+  forM_ (state ^. enemyBullets) (Bullet.render renderer)
