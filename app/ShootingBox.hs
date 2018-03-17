@@ -33,6 +33,7 @@ data MainChar
   , _speed :: !Int
   , _texture :: SDL.Texture
   , _hitTimer :: !Int
+  , _bulletsTimer :: !Int
   , _health :: !Int
   }
 
@@ -53,9 +54,10 @@ mkMainChar ts = do
         MainChar
           { _pos = Point 380 800
           , _size = Size 64 64
-          , _speed = 4
+          , _speed = 6
           , _texture = rint
           , _hitTimer = -1
+          , _bulletsTimer = 5
           , _health = 1
           }
 
@@ -66,7 +68,8 @@ update input mc = do
     move = keysToMovement (mc ^. speed) input
 
     addBullets
-      | keyClicked KeyA input =
+      | keyPressed KeyA input
+      , mc ^. bulletsTimer == 0 =
         DL.append $ DL.fromList (newBullet mc)
       | otherwise = id
 
@@ -77,6 +80,7 @@ update input mc = do
       & set (size . sW) (if keyPressed KeyB input then 32 else 64)
       & set speed (if keyPressed KeyB input then 2 else 4)
       & over hitTimer (\t -> if t <= 0 then -1 else t - 1)
+      & over bulletsTimer (\t -> if t <= 0 then 5 else t - 1)
 
     result =
       if mc ^. health < 0 && mc ^. hitTimer < 0
@@ -91,8 +95,8 @@ newBullet mc
     [ mkBullet (mc ^. texture) 10 5 100 ((mc ^. pos) `addPoint` Point (mc ^. size . sW `div` 2) 0)
     ]
   | otherwise =
-    [ mkBullet (mc ^. texture) 10 3 100 ((mc ^. pos) `addPoint` Point (mc ^. size . sW `div` 4) 0)
-    , mkBullet (mc ^. texture) 10 3 100 ((mc ^. pos) `addPoint` Point ((mc ^. size . sW `div` 4) * 3) 0)
+    [ mkBullet (mc ^. texture) 10 2 100 ((mc ^. pos) `addPoint` Point (mc ^. size . sW `div` 4) 0)
+    , mkBullet (mc ^. texture) 10 2 100 ((mc ^. pos) `addPoint` Point ((mc ^. size . sW `div` 4) * 3) 0)
     ]
 
 

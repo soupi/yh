@@ -66,7 +66,7 @@ mkEnemy posi ts = do
           , _speed = 1
           , _texture = txt
           , _direction = Point 0 1
-          , _health = 50
+          , _health = 100
           , _timers = initEnemyTimers
           }
 
@@ -90,7 +90,7 @@ update input enemy = do
     enemy' =
       enemy
       & over pos (`addPoint` move enemy)
-      & over timers (updateTimers 60 90)
+      & over timers (updateTimers 30 90)
       & over speed changeSpeed
       & over direction (changeDirection wsize enemy undefined)
   pure
