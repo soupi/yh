@@ -43,7 +43,7 @@ makeFieldsNoPrefix ''Enemy
 
 wantedAssets :: [(String, FilePath)]
 wantedAssets =
-  [ ("moon", "assets/moon.png")
+  [ ("moon", "assets/moon2.png")
   ]
 
 mkEnemy :: Point -> [(String, SDL.Texture)] -> Result Enemy

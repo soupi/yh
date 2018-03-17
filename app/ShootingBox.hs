@@ -75,6 +75,7 @@ update input mc = do
       & over pos (`addPoint` move)
       & fixPos wsize
       & set (size . sW) (if keyPressed KeyB input then 32 else 64)
+      & set speed (if keyPressed KeyB input then 2 else 4)
       & over hitTimer (\t -> if t <= 0 then -1 else t - 1)
 
     result =
