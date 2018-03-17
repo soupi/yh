@@ -104,7 +104,7 @@ update input state = do
   let
     newState =
       state
-        & set mc mc'
+        & set mc (SB.checkHit (state ^. enemyBullets) mc')
         & set enemies enemies'
         & over enemies (addEnemy . map (Enemy.checkHit (state ^. mcBullets)))
         & set mcBullets mcBullets'
