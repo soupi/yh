@@ -63,7 +63,7 @@ update input mc = do
     addBullets
       | keyClicked KeyA input =
         DL.append $ DL.fromList
-          [ mkBullet (mc ^. texture) 8 0 ((mc ^. pos) `addPoint` Point (mc ^. size . sW `div` 2) 0)
+          [ mkBullet (mc ^. texture) 8 5 ((mc ^. pos) `addPoint` Point (mc ^. size . sW `div` 2) 0)
           --[ mkBullet (mc ^. texture) 8 0 ((mc ^. pos) `addPoint` Point (mc ^. size . sW `div` 4) 0)
           --, mkBullet (mc ^. texture) 8 0 ((mc ^. pos) `addPoint` Point ((mc ^. size . sW `div` 4) * 3) 0)
           ]

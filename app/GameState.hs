@@ -14,6 +14,7 @@ import Play.Engine.Utils
 import Play.Engine.Types
 import Play.Engine.Input
 import Play.Engine.Settings
+import Control.Applicative
 import Control.Monad
 import Control.Monad.Except
 import Control.Lens
@@ -33,10 +34,11 @@ data State
   = State
   { _bg :: SBG.SBG
   , _mc :: SB.MainChar
-  , _enemy :: Enemy.Enemy
+  , _enemies :: [Enemy.Enemy]
   , _mcBullets :: DL.DList Bullet
   , _enemyBullets :: DL.DList Bullet
   , _textures :: [(String, SDL.Texture)]
+  , _enemyTimer :: Int
   }
 
 makeFieldsNoPrefix ''State
@@ -70,32 +72,43 @@ initState ts = do
       pure $ State
         (SBG.mkSBG bgt 1 (Size 800 1000) (Point 0 0))
         mc'
-        enemy'
+        ([enemy'])
         (DL.fromList [])
         (DL.fromList [])
         ts
+        300
 
 update :: Input -> State -> Result (State.Command, State)
 update input state = do
   wSize <- _windowSize <$> SM.get
   (mc', addMCBullets) <- SB.update input (state ^. mc)
-  (enemy', addEnemyBullets) <- Enemy.update input (state ^. enemy)
+  (enemies', addEnemiesBullets) <-
+    bimap mconcat (foldr (.) id) . unzip <$> traverse (Enemy.update input) (state ^. enemies)
   let
-    (enemyHit, mcBullets') =
-      updateListWith False (||) (updateBullet wSize [state ^. enemy]) . addMCBullets $ state ^. mcBullets
-    (mcHit, enemyBullets') =
-      updateListWith False (||) (updateBullet wSize [state ^. mc]) . addEnemyBullets $ state ^. enemyBullets
-    -- mcHit = (DL.foldr (\bullet acc -> acc || isTouching (state ^. mc) bullet) False (state ^. enemyBullets))
-    -- enemyHit = (DL.foldr (\bullet acc -> acc || isTouching (state ^. enemy) bullet) False (state ^. mcBullets))
+    (mcBullets', enemiesHit) =
+      updateListWith False (||) (updateBullet wSize (state ^. enemies)) . addMCBullets $ state ^. mcBullets
+    (enemyBullets', mcHit) =
+      updateListWith False (||) (updateBullet wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
+  let
+    addEnemyM
+      | state ^. enemyTimer == 0 && length (state ^. enemies) < 2
+      = (:) <$> Enemy.mkEnemy (Point 200 (-180)) (state ^. textures)
+
+      | otherwise
+      = pure id
+
+  addEnemy <- addEnemyM
+
   let
     newState =
       state
         & set mc mc'
-        & set enemy enemy'
+        & set enemies enemies'
+        & over enemies (addEnemy . map (Enemy.checkHit (state ^. mcBullets)))
         & set mcBullets mcBullets'
         & set enemyBullets enemyBullets'
         & over bg SBG.updateSBG
-
+        & over enemyTimer (\t -> if t <= 0 then 300 else t - 1)
 
   -- state stack manipulation
   if
@@ -111,7 +124,7 @@ render :: SDL.Renderer -> State -> IO ()
 render renderer state = do
   SBG.render renderer (state ^. bg)
   SB.render renderer (state ^. mc)
-  Enemy.render renderer (state ^. enemy)
+  traverse (Enemy.render renderer) (state ^. enemies)
   forM_ (state ^. mcBullets) $ \bullet ->
     SDL.copy renderer (bullet ^. texture) Nothing (Just $ toRect (bullet ^. pos) (bullet ^. size))
   forM_ (state ^. enemyBullets) $ \bullet ->

@@ -7,6 +7,7 @@ module Bullet where
 
 import qualified SDL
 
+import Data.Maybe
 import Play.Engine.Utils
 import Play.Engine.Types
 import Control.Lens
@@ -32,9 +33,9 @@ mkBullet txt spd dmg position = Bullet
   }
 
 updateBullet wsize entities b
-  | any (isTouching b) entities =
-    (True, [])
+  | any (isJust . isTouching b) entities =
+    ([], True)
   | b ^. pos . pY < 0 || b ^. pos . pY > wsize ^. sH =
-    (False, [])
+    ([], False)
   | otherwise =
-    (False, [over (pos . pY) (flip (-) (b ^. speed)) b])
+    ([over (pos . pY) (flip (-) (b ^. speed)) b], False)

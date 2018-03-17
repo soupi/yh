@@ -13,6 +13,7 @@ import qualified Foreign.C.Types as C (CInt)
 import qualified Linear
 import qualified Linear.Affine as Linear
 import Control.Lens
+import Control.DeepSeq
 
 import Prelude hiding (head)
 import qualified Data.List as List
@@ -74,11 +75,11 @@ apToPoint f !p1 !p2 =
 updateList :: (a -> [a]) -> DL.DList a -> DL.DList a
 updateList f = DL.foldr (\x acc -> DL.fromList (f x) `DL.append` acc) DL.empty
 
-updateListWith :: b -> (b -> b -> b) -> (a -> (b, [a])) -> DL.DList a -> (b, DL.DList a)
-updateListWith start combine f = flip DL.foldr (start, DL.empty) $ \x acc ->
+updateListWith :: NFData b => b -> (b -> b -> b) -> (a -> ([a], b)) -> DL.DList a -> (DL.DList a, b)
+updateListWith start combine f = flip DL.foldr (DL.empty, start) $ \x !acc ->
   case (f x, acc) of
-    ((b, []), (bacc, aacc)) -> (combine bacc b, aacc)
-    ((b, xs), (bacc, aacc)) -> (combine bacc b, DL.fromList xs `DL.append` aacc)
+    (([], b), (aacc, bacc)) -> (aacc, force $ combine bacc b)
+    ((xs, b), (aacc, bacc)) -> (DL.fromList xs `DL.append` aacc, force $ combine bacc b)
 
 
 toRect :: Point -> Size -> SDL.Rectangle C.CInt
@@ -95,7 +96,7 @@ data HasPosSize
 
 makeFieldsNoPrefix ''HasPosSize
 
-isTouching :: (HasSize a Size, HasPos a Point, HasSize b Size, HasPos b Point) => a -> b -> Bool
+isTouching :: (HasSize a Size, HasPos a Point, HasSize b Size, HasPos b Point) => a -> b -> Maybe (a,b)
 isTouching a b =
   let
     getCenter x = (x ^. pos) `addPoint` Point ((x ^. size . sW) `div` 2) ((x ^. size . sH) `div` 2)
@@ -107,7 +108,9 @@ isTouching a b =
     distY = (aCenter ^. pY) - (bCenter ^. pY)
     dist = sqrt $ fromIntegral ((distX * distX) + (distY * distY))
   in
-    dist < fromIntegral (aRadius + bRadius)
+    if dist < fromIntegral (aRadius + bRadius)
+      then Just (a, b)
+      else Nothing
 
 fixPos :: (HasSize a Size, HasPos a Point) => Size -> a -> a
 fixPos wsize entity =
