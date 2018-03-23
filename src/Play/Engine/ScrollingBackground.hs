@@ -1,6 +1,8 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE DuplicateRecordFields  #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
+{-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Play.Engine.ScrollingBackground where
@@ -22,13 +24,13 @@ data SBG
 
 data BG
   = BG
-  { _pos :: !Point
+  { _pos :: !IPoint
   }
 
 makeFieldsNoPrefix ''BG
 makeFieldsNoPrefix ''SBG
 
-mkSBG :: SDL.Texture -> Int -> Size -> Point -> SBG
+mkSBG :: SDL.Texture -> Int -> Size -> IPoint -> SBG
 mkSBG txt spd sz position =
   let
     bg = BG
@@ -36,7 +38,7 @@ mkSBG txt spd sz position =
       }
   in
     SBG
-    { _sbg1 = over (pos . pY) (flip (-) (sz ^. sH)) bg
+    { _sbg1 = over (pos . y) (flip (-) (sz ^. y)) bg
     , _sbg2 = bg
     , _size = sz
     , _speed = negate spd
@@ -47,17 +49,17 @@ updateSBG :: SBG -> SBG
 updateSBG sbg =
   let
     sbg' =
-      if (sbg ^. sbg2 . pos . pY) > (sbg ^. size . sH)
+      if (sbg ^. sbg2 . pos . y) > (sbg ^. size . y)
         then
           sbg
-            & over (sbg1 . pos . pY) (flip (-) (sbg ^. size . sH))
+            & over (sbg1 . pos . y) (flip (-) (sbg ^. size . y))
             & set sbg2 (sbg ^. sbg1) 
         else
           sbg
   in
     sbg'
-      & over (sbg1 . pos . pY) (flip (-) (sbg' ^. speed))
-      & over (sbg2 . pos . pY) (flip (-) (sbg' ^. speed))
+      & over (sbg1 . pos . y) (flip (-) (sbg' ^. speed))
+      & over (sbg2 . pos . y) (flip (-) (sbg' ^. speed))
 
 render :: SDL.Renderer -> SBG -> IO ()
 render renderer sbg = do

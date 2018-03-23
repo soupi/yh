@@ -32,7 +32,7 @@ runGame sets w = do
 run :: Settings -> Stack State.State -> IO ()
 run settings stack = do
   responsesQueue <- newTQueueIO
-  void $ MySDL.withWindow "Game" (MySDL.myWindowConfig (Linear.V2 (winSize sW) (winSize sH))) $
+  void $ MySDL.withWindow "Game" (MySDL.myWindowConfig (Linear.V2 (winSize x) (winSize y))) $
     flip MySDL.withRenderer
       (setBGColorBlack >=> \(window, ren) -> MySDL.apploop responsesQueue ren (settings, stack) update (render (window, ren) . snd))
   where

@@ -25,14 +25,17 @@ import qualified Data.DList as DL
 import Bullet
 import qualified Play.Engine.ScrollingBackground as SBG
 
+import Debug.Trace
+
 
 data Enemy
   = Enemy
-  { _pos :: !Point
+  { _pos :: !IPoint
   , _size :: !Size
   , _speed :: !Int
-  , _direction :: !Point
+  , _direction :: !IPoint
   , _texture :: SDL.Texture
+  , _degree :: !Int
   , _health :: !Int
   , _timers :: !EnemyTimers
   }
@@ -52,7 +55,7 @@ wantedAssets =
   [ ("moon", "assets/moon2.png")
   ]
 
-mkEnemy :: Point -> [(String, SDL.Texture)] -> Result Enemy
+mkEnemy :: IPoint -> [(String, SDL.Texture)] -> Result Enemy
 mkEnemy posi ts = do
   let textName = "moon"
   case lookup textName ts of
@@ -62,10 +65,11 @@ mkEnemy posi ts = do
       pure $
         Enemy
           { _pos = posi
-          , _size = Size 96 96
+          , _size = Point 96 96
           , _speed = 1
-          , _texture = txt
           , _direction = Point 0 1
+          , _texture = txt
+          , _degree = 180
           , _health = 100
           , _timers = initEnemyTimers
           }
@@ -90,26 +94,27 @@ update input enemy = do
     enemy' =
       enemy
       & over pos (`addPoint` move enemy)
-      & over timers (updateTimers 30 90)
+      & over timers (updateTimers 2 120)
       & over speed changeSpeed
       & over direction (changeDirection wsize enemy undefined)
+      & over degree (\d -> if d >= 360 then 1 else d+1)
   pure
     ( if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0 then [] else pure enemy'
     , addBullets enemy
     )
 
-changeDirection :: Size -> Enemy -> Point -> Point -> Point
+changeDirection :: Size -> Enemy -> IPoint -> IPoint -> IPoint
 changeDirection wsize enemy _target
   | enemy ^. timers . movementTimer == 0
-  , enemy ^. direction . pY == 1
+  , enemy ^. direction . y == 1
   = const (Point 1 0)
 
   | enemy ^. timers . movementTimer == 0
-  , enemy ^. pos . pX > (wsize ^. sW `div` 2)
+  , enemy ^. pos . x > (wsize ^. x `div` 2)
   = flip addPoint $ Point (-1) 0
 
   | enemy ^. timers . movementTimer == 0
-  , enemy ^. pos . pX <= (wsize ^. sW `div` 2)
+  , enemy ^. pos . x <= (wsize ^. x `div` 2)
   = flip addPoint $ Point 1 0
 
   | enemy ^. timers . movementTimer == 0
@@ -118,20 +123,26 @@ changeDirection wsize enemy _target
   | otherwise = id
 
 
+
 addBullets :: Enemy -> DL.DList Bullet -> DL.DList Bullet 
 addBullets enemy
   | enemy ^. timers . bulletsTimer == 0
-  , enemy ^. timers . hitTimer < 0
-  , enemy ^. direction . pY == 0 =
-    DL.append $ DL.fromList
-      [ mkBullet (enemy ^. texture) (-6) 5 255
-        ((enemy ^. pos) `addPoint` Point (enemy ^. size . sW `div` 2) (enemy ^. size . sH))
+  --, enemy ^. timers . hitTimer < 0
+  , enemy ^. direction . y == 0
+  = let
+      Point w h = Point (enemy ^. size . x) (enemy ^. size . y)
+      d = fromIntegral (enemy ^. degree) * (pi / 180)
+      dir = Point (cos d) (sin d)
+    in DL.append $ DL.fromList
+      [ mkBullet (enemy ^. texture) dir (Point 1 1) (fmap (3*) dir) 5 255
+        $ ((enemy ^. pos) `addPoint` Point (enemy ^. size . x `div` 2) (enemy ^. size . y `div` 2))
+          `addPoint` fmap (floor . (30*)) dir
       ]
   | otherwise = id
 
-move :: Enemy -> Point
+move :: Enemy -> IPoint
 move enemy
-  | (enemy ^. timers . hitTimer) < 0
+  | enemy ^. health > 0 -- && (enemy ^. timers . hitTimer) < 0
   = (enemy ^. direction) `mulPoint` Point (enemy ^. speed) (enemy ^. speed)
   | otherwise = Point 0 0
 

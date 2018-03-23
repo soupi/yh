@@ -71,7 +71,7 @@ initState ts = do
       mc' <- (SB.mkMainChar ts)
       enemy' <- (Enemy.mkEnemy (Point 200 (-180)) ts)
       pure $ State
-        (SBG.mkSBG bgt 1 (Size 800 1000) (Point 0 0))
+        (SBG.mkSBG bgt 1 (Point 800 1000) (Point 0 0))
         mc'
         ([enemy'])
         (DL.fromList [])

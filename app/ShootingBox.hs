@@ -28,7 +28,7 @@ import qualified Play.Engine.ScrollingBackground as SBG
 
 data MainChar
   = MainChar
-  { _pos :: !Point
+  { _pos :: !IPoint
   , _size :: !Size
   , _speed :: !Int
   , _texture :: SDL.Texture
@@ -53,13 +53,16 @@ mkMainChar ts = do
       pure $
         MainChar
           { _pos = Point 380 800
-          , _size = Size 64 64
+          , _size = charSize
           , _speed = 6
           , _texture = rint
           , _hitTimer = -1
           , _bulletsTimer = 5
           , _health = 1
           }
+
+charSize :: Size
+charSize = Point 32 48
 
 update :: Input -> MainChar -> Result (MainChar, DL.DList Bullet -> DL.DList Bullet)
 update input mc = do
@@ -77,26 +80,26 @@ update input mc = do
       mc
       & over pos (`addPoint` move)
       & fixPos wsize
-      & set (size . sW) (if keyPressed KeyB input then 32 else 64)
+      & set (size . x) (if keyPressed KeyB input then charSize ^. x `div` 2 else charSize ^. x)
       & set speed (if keyPressed KeyB input then 2 else 4)
       & over hitTimer (\t -> if t <= 0 then -1 else t - 1)
       & over bulletsTimer (\t -> if t <= 0 then 5 else t - 1)
 
     result =
       if mc ^. health < 0 && mc ^. hitTimer < 0
-        then (set size (Size 0 0) mc, id)
+        then (set size (Point 0 0) mc, id)
         else (newMC, addBullets)
 
   pure result
 
 newBullet :: MainChar -> [Bullet]
 newBullet mc
-  | mc ^. size . sW <= 32 =
-    [ mkBullet (mc ^. texture) 10 5 100 ((mc ^. pos) `addPoint` Point (mc ^. size . sW `div` 2) 0)
+  | mc ^. size . x == charSize ^. x =
+    [ mkBullet (mc ^. texture) (Point 0 (-1)) (Point 0 10) (Point 0 10) 2 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 4) 0)
+    , mkBullet (mc ^. texture) (Point 0 (-1)) (Point 0 10) (Point 0 10) 2 100 ((mc ^. pos) `addPoint` Point ((mc ^. size . x `div` 4) * 3) 0)
     ]
   | otherwise =
-    [ mkBullet (mc ^. texture) 10 2 100 ((mc ^. pos) `addPoint` Point (mc ^. size . sW `div` 4) 0)
-    , mkBullet (mc ^. texture) 10 2 100 ((mc ^. pos) `addPoint` Point ((mc ^. size . sW `div` 4) * 3) 0)
+    [ mkBullet (mc ^. texture) (Point 0 (-1)) (Point 0 10) (Point 0 10) 5 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 2) 0)
     ]
 
 
@@ -125,4 +128,4 @@ render renderer mc =
     else do
       SDL.textureBlendMode (mc ^. texture) SDL.$= SDL.BlendAlphaBlend
       SDL.textureAlphaMod  (mc ^. texture) SDL.$= 255
-      SDL.copy renderer (mc ^. texture) Nothing (Just $ toRect (mc ^. pos) (mc ^. size))
+      SDL.copy renderer (mc ^. texture) Nothing (Just rect)

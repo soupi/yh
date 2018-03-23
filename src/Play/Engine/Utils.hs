@@ -60,17 +60,19 @@ supplyBoth = (=<<)
 (.:) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
 (.:) f g x y = f (g x y)
 
+absPoint :: IPoint -> IPoint
+absPoint = fmap abs
 
-addPoint :: Point -> Point -> Point
+addPoint :: Num a => Point a -> Point a -> Point a
 addPoint = apToPoint (+)
 
-mulPoint :: Point -> Point -> Point
+mulPoint :: Num a => Point a -> Point a -> Point a
 mulPoint = apToPoint (*)
 
-apToPoint :: (Int -> Int -> Int) -> Point -> Point -> Point
+apToPoint :: (a -> a -> a) -> Point a -> Point a -> Point a
 apToPoint f !p1 !p2 =
-  p1 & over pX (f (p2 ^. pX))
-     & over pY (f (p2 ^. pY))
+  p1 & over x (f (p2 ^. x))
+     & over y (f (p2 ^. y))
 
 updateList :: (a -> [a]) -> DL.DList a -> DL.DList a
 updateList f = DL.foldr (\x acc -> DL.fromList (f x) `DL.append` acc) DL.empty
@@ -82,7 +84,7 @@ updateListWith start combine f = flip DL.foldr (DL.empty, start) $ \x !acc ->
     ((xs, b), (aacc, bacc)) -> (DL.fromList xs `DL.append` aacc, force $ combine bacc b)
 
 
-toRect :: Point -> Size -> SDL.Rectangle C.CInt
+toRect :: IPoint -> Size -> SDL.Rectangle C.CInt
 toRect posi sz =
   SDL.Rectangle
     (Linear.P . uncurry Linear.V2 . over both fromIntegral . pointToTuple $ posi)
@@ -90,45 +92,45 @@ toRect posi sz =
 
 data HasPosSize
   = HasPosSize
-  { _pos :: !Point
+  { _pos :: !IPoint
   , _size :: !Size
   }
 
 makeFieldsNoPrefix ''HasPosSize
 
-isTouching :: (HasSize a Size, HasPos a Point, HasSize b Size, HasPos b Point) => a -> b -> Maybe (a,b)
+isTouching :: (HasSize a Size, HasPos a IPoint, HasSize b Size, HasPos b IPoint) => a -> b -> Maybe (a,b)
 isTouching a b =
   let
-    getCenter x = (x ^. pos) `addPoint` Point ((x ^. size . sW) `div` 2) ((x ^. size . sH) `div` 2)
+    getCenter p = (p ^. pos) `addPoint` Point ((p ^. size . x) `div` 2) ((p ^. size . y) `div` 2)
     aCenter = getCenter a
     bCenter = getCenter b
-    aRadius = (a ^. size . sW) `div` 2
-    bRadius = (b ^. size . sW) `div` 2
-    distX = (aCenter ^. pX) - (bCenter ^. pX)
-    distY = (aCenter ^. pY) - (bCenter ^. pY)
+    aRadius = (a ^. size . x) `div` 2
+    bRadius = (b ^. size . x) `div` 2
+    distX = (aCenter ^. x) - (bCenter ^. x)
+    distY = (aCenter ^. y) - (bCenter ^. y)
     dist = sqrt $ fromIntegral ((distX * distX) + (distY * distY))
   in
     if dist < fromIntegral (aRadius + bRadius)
       then Just (a, b)
       else Nothing
 
-fixPos :: (HasSize a Size, HasPos a Point) => Size -> a -> a
+fixPos :: (HasSize a Size, HasPos a IPoint) => Size -> a -> a
 fixPos wsize entity =
   let
-    x = entity ^. pos . pX
-    y = entity ^. pos . pY
+    x_ = entity ^. pos . x
+    y_ = entity ^. pos . y
     x' =
-      if x <= 0
+      if x_ <= 0
         then 0
-        else if x + (entity^.size.sW) <= (wsize^.sW)
-          then x
-          else (wsize^.sW) - (entity^.size.sW)
+        else if x_ + (entity ^. size . x) <= (wsize ^. x)
+          then x_
+          else (wsize ^. x) - (entity ^. size . x)
     y' =
-      if y <= 0
+      if y_ <= 0
         then 0
-        else if y + (entity^.size.sH) <= (wsize^.sH)
-          then y
-          else (wsize^.sH) - (entity^.size.sH)
+        else if y_ + (entity ^. size . y) <= (wsize ^. y)
+          then y_
+          else (wsize ^. y) - (entity ^. size . y)
   in
     set pos (Point x' y') entity
 

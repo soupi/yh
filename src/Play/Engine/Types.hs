@@ -10,25 +10,21 @@ import Control.DeepSeq
 -- Types --
 -----------
 
-data Point
+data Point a
   = Point
-  { _pX :: {-# UNPACK #-} !Int
-  , _pY :: {-# UNPACK #-} !Int
+  { _x :: !a
+  , _y :: !a
   }
-  deriving (Show, Read, Eq, Ord, Generic, NFData)
+  deriving (Show, Read, Eq, Ord, Functor, Generic, NFData)
 
-data Size
-  = Size
-  { _sW :: {-# UNPACK #-} !Int
-  , _sH :: {-# UNPACK #-} !Int
-  }
-  deriving (Show, Read, Eq, Ord, Generic, NFData)
+type IPoint = Point Int
+type FPoint = Point Float
+type Size = Point Int
 
 makeLenses ''Point
-makeLenses ''Size
 
-pointToTuple :: Point -> (Int, Int)
+pointToTuple :: Point a -> (a, a)
 pointToTuple (Point !x !y) = (x, y)
 
 sizeToTuple :: Size -> (Int, Int)
-sizeToTuple (Size !w !h) = (w, h)
+sizeToTuple (Point !w !h) = (w, h)

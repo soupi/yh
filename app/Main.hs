@@ -21,5 +21,5 @@ main = do
 
 settings :: Settings
 settings = def
-  { _windowSize = Size 800 1000
+  { _windowSize = Point 800 1000
   }

@@ -29,7 +29,7 @@ runResult settings m = fmap swap $ runExcept $ SM.runStateT m settings
 
 def :: Settings
 def = Settings
-  { _windowSize = Size 800 600
+  { _windowSize = Point 800 600
   , _keyMap = defKeyMap
   , _keyStats = initKeyStats
   }
