@@ -21,6 +21,7 @@ import qualified Control.Monad.State as SM
 import qualified Linear
 import qualified Data.DList as DL
 
+import qualified Movement as MV
 import Bullet
 
 
@@ -28,7 +29,7 @@ data MainChar
   = MainChar
   { _pos :: !IPoint
   , _size :: !Size
-  , _speed :: !Int
+  , _movement :: MV.Movement
   , _texture :: SDL.Texture
   , _hitTimer :: !Int
   , _bulletsTimer :: !Int
@@ -52,11 +53,11 @@ mkMainChar ts = do
         MainChar
           { _pos = Point 380 800
           , _size = charSize
-          , _speed = 6
           , _texture = rint
           , _hitTimer = -1
           , _bulletsTimer = 5
           , _health = 1
+          , _movement = MV.make (Point 4 4) (Point 6 6)
           }
 
 charSize :: Size
@@ -66,7 +67,11 @@ update :: Input -> MainChar -> Result (MainChar, DL.DList Bullet -> DL.DList Bul
 update input mc = do
   wsize <- _windowSize <$> SM.get
   let
-    move = keysToMovement (mc ^. speed) input
+    direction = keysToMovement 1 input
+    (mv, move) =
+      MV.update direction
+        . set MV.maxSpeed (if keyPressed KeyB input then Point 2 2 else Point 4 4)
+        $ (mc ^. movement)
 
     addBullets
       | keyPressed KeyA input
@@ -79,7 +84,7 @@ update input mc = do
       & over pos (`addPoint` move)
       & fixPos wsize
       & set (size . x) (if keyPressed KeyB input then charSize ^. x `div` 2 else charSize ^. x)
-      & set speed (if keyPressed KeyB input then 2 else 4)
+      & set movement mv
       & over hitTimer (\t -> if t <= 0 then -1 else t - 1)
       & over bulletsTimer (\t -> if t <= 0 then 5 else t - 1)
 

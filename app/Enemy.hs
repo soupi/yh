@@ -33,7 +33,7 @@ data Enemy
   , _speed :: !Int
   , _direction :: !IPoint
   , _texture :: SDL.Texture
-  , _degree :: !Int
+  , _degree :: !Float
   , _health :: !Int
   , _timers :: !EnemyTimers
   }
@@ -67,7 +67,7 @@ mkEnemy posi ts = do
           , _speed = 1
           , _direction = Point 0 1
           , _texture = txt
-          , _degree = 180
+          , _degree = 90
           , _health = 100
           , _timers = initEnemyTimers
           }
@@ -95,7 +95,7 @@ update input enemy = do
       & over timers (updateTimers 2 120)
       & over speed changeSpeed
       & over direction (changeDirection wsize enemy undefined)
-      & over degree (\d -> if d >= 360 then 1 else d+2)
+      & over degree (\d -> if d >= 360 then 1 else d+1.5)
   pure
     ( if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0 then [] else pure enemy'
     , addBullets enemy
@@ -129,7 +129,7 @@ addBullets enemy
   , enemy ^. direction . y == 0
   = let
       Point w h = Point (enemy ^. size . x) (enemy ^. size . y)
-      d = fromIntegral (enemy ^. degree) * (pi / 180)
+      d = (enemy ^. degree) * (pi / 180)
       dir = Point (cos d) (sin d)
     in DL.append $ DL.fromList
       [ mkBullet (enemy ^. texture) dir (Point 1 1) (fmap (3*) dir) 5 255

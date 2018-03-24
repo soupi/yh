@@ -22,7 +22,7 @@ import qualified Control.Monad.State as SM
 import qualified Linear
 import qualified Data.DList as DL
 
-
+import Debug.Trace
 
 
 data Movement
@@ -49,20 +49,21 @@ make accel maxspeed =
 updateMovement :: FPoint -> Movement -> Movement
 updateMovement direction mv =
   let
-    accelX = mv ^. acceleration . x * direction ^. x
-    accelY = mv ^. acceleration . y * direction ^. y
-  in mv
-    & over (speed . x)
-      ( if mv ^. accelerationTimer == 0
-          then limit (mv ^. maxSpeed . x) . (+ accelX)
-          else id
-      )
-    & over (speed . y)
-      ( if mv ^. accelerationTimer == 0
-          then limit (mv ^. maxSpeed . y) . (+ accelY)
-          else id
-      )
-    & over accelerationTimer (\t -> if t <= 0 then 5 else t - 1)
+    updateSpeedC c spd =
+      let
+        accel =
+          if direction ^. c /= 0
+            then (mv ^. acceleration . c) * (direction ^. c)
+            else limit (abs spd) $ (mv ^. acceleration . c) * negate (normalize spd)
+      in
+        if mv ^. accelerationTimer == 0
+          then limit (mv ^. maxSpeed . c) . (+ accel) $ spd
+          else spd
+  in
+    mv
+    & over (speed . x) (updateSpeedC x)
+    & over (speed . y) (updateSpeedC y)
+    & over accelerationTimer (\t -> if t <= 0 then 1 else t - 1)
 
 limit :: Float -> Float -> Float
 limit lim n

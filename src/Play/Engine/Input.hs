@@ -93,7 +93,7 @@ keyPressed key = maybe False (/= Idle) . M.lookup key . inputKeys
 keyIdle :: Key -> Input -> Bool
 keyIdle key = maybe False (== Idle) . M.lookup key . inputKeys
 
-keysToMovement :: Int -> Input -> IPoint
+keysToMovement :: Float -> Input -> FPoint
 keysToMovement speed keys =
   let
       singleMove k1 k2
