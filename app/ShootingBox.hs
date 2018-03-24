@@ -21,9 +21,7 @@ import qualified Control.Monad.State as SM
 import qualified Linear
 import qualified Data.DList as DL
 
-
 import Bullet
-import qualified Play.Engine.ScrollingBackground as SBG
 
 
 data MainChar

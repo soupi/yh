@@ -25,8 +25,6 @@ import qualified Data.DList as DL
 import Bullet
 import qualified Play.Engine.ScrollingBackground as SBG
 
-import Debug.Trace
-
 
 data Enemy
   = Enemy
@@ -77,7 +75,7 @@ mkEnemy posi ts = do
 initEnemyTimers :: EnemyTimers
 initEnemyTimers = EnemyTimers
   { _bulletsTimer = 30
-  , _movementTimer = 250
+  , _movementTimer = 350
   , _hitTimer = -1
   }
 
@@ -97,7 +95,7 @@ update input enemy = do
       & over timers (updateTimers 2 120)
       & over speed changeSpeed
       & over direction (changeDirection wsize enemy undefined)
-      & over degree (\d -> if d >= 360 then 1 else d+1)
+      & over degree (\d -> if d >= 360 then 1 else d+2)
   pure
     ( if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0 then [] else pure enemy'
     , addBullets enemy
