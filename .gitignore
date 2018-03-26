@@ -62,6 +62,7 @@ cabal-dev
 .hsenv
 .cabal-sandbox/
 cabal.sandbox.config
+*.ps
 *.prof
 *.aux
 *.hp

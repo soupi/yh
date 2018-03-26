@@ -77,7 +77,7 @@ initState ts = do
         (DL.fromList [])
         (DL.fromList [])
         ts
-        300
+        200
 
 update :: Input -> State -> Result (State.Command, State)
 update input state = do

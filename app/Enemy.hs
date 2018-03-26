@@ -24,14 +24,15 @@ import qualified Data.DList as DL
 
 import Bullet
 import qualified Play.Engine.ScrollingBackground as SBG
+import qualified Movement as MV
 
 
 data Enemy
   = Enemy
   { _pos :: !IPoint
   , _size :: !Size
-  , _speed :: !Int
-  , _direction :: !IPoint
+  , _movement :: !MV.Movement
+  , _direction :: !FPoint
   , _texture :: SDL.Texture
   , _degree :: !Float
   , _health :: !Int
@@ -40,8 +41,7 @@ data Enemy
 
 data EnemyTimers
   = EnemyTimers
-  { _movementTimer :: !Int
-  , _bulletsTimer :: !Int
+  { _bulletsTimer :: !Int
   , _hitTimer :: !Int
   }
 
@@ -64,8 +64,8 @@ mkEnemy posi ts = do
         Enemy
           { _pos = posi
           , _size = Point 96 96
-          , _speed = 1
           , _direction = Point 0 1
+          , _movement = MV.make (Point 0.1 0.1) (Point 1.5 1.5)
           , _texture = txt
           , _degree = 90
           , _health = 100
@@ -74,8 +74,7 @@ mkEnemy posi ts = do
 
 initEnemyTimers :: EnemyTimers
 initEnemyTimers = EnemyTimers
-  { _bulletsTimer = 30
-  , _movementTimer = 350
+  { _bulletsTimer = 2
   , _hitTimer = -1
   }
 
@@ -83,42 +82,42 @@ update :: Input -> Enemy -> Result ([Enemy], DL.DList Bullet -> DL.DList Bullet)
 update input enemy = do
   wsize <- _windowSize <$> SM.get
   let
-    changeSpeed
-      | enemy ^. timers . movementTimer == 0
-      = const 1
-      | otherwise
-      = id
+    dir = changeDirection wsize enemy
+    (mv, move) =
+      MV.update dir
+        $ (enemy ^. movement)
 
     enemy' =
       enemy
-      & over pos (`addPoint` move enemy)
-      & over timers (updateTimers 2 120)
-      & over speed changeSpeed
-      & over direction (changeDirection wsize enemy undefined)
+      & over pos (`addPoint` move)
+      & set movement mv
+      & over timers (updateTimers (initEnemyTimers ^. bulletsTimer))
+      & set direction dir
       & over degree (\d -> if d >= 360 then 1 else d+1.5)
   pure
     ( if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0 then [] else pure enemy'
     , addBullets enemy
     )
 
-changeDirection :: Size -> Enemy -> IPoint -> IPoint -> IPoint
-changeDirection wsize enemy _target
-  | enemy ^. timers . movementTimer == 0
+changeDirection :: Size -> Enemy -> FPoint
+changeDirection wsize enemy
+  | enemy ^. pos . y >= 100
   , enemy ^. direction . y == 1
-  = const (Point 1 0)
+  = Point 1 0
 
-  | enemy ^. timers . movementTimer == 0
-  , enemy ^. pos . x > (wsize ^. x `div` 2)
-  = flip addPoint $ Point (-1) 0
+  | enemy ^. pos . x > 2 * (wsize ^. x `div` 3) - enemy ^. size . x
+  , enemy ^. direction . y == 0
+  = Point (-1) 0
 
-  | enemy ^. timers . movementTimer == 0
-  , enemy ^. pos . x <= (wsize ^. x `div` 2)
-  = flip addPoint $ Point 1 0
+  | enemy ^. pos . x <= (wsize ^. x `div` 3)
+  , enemy ^. direction . y == 0
+  = Point 1 0
 
-  | enemy ^. timers . movementTimer == 0
-  = flip addPoint $ enemy ^. direction
+  | enemy ^. health <= 0
+  = Point 0 0
 
-  | otherwise = id
+  | otherwise
+  = enemy ^. direction
 
 
 
@@ -138,18 +137,10 @@ addBullets enemy
       ]
   | otherwise = id
 
-move :: Enemy -> IPoint
-move enemy
-  | enemy ^. health > 0 -- && (enemy ^. timers . hitTimer) < 0
-  = (enemy ^. direction) `mulPoint` Point (enemy ^. speed) (enemy ^. speed)
-  | otherwise = Point 0 0
-
-
-updateTimers :: Int -> Int -> EnemyTimers -> EnemyTimers
-updateTimers bv mv et =
+updateTimers :: Int -> EnemyTimers -> EnemyTimers
+updateTimers bv et =
   et
   & over bulletsTimer  (\t -> if t <= 0 then bv else t - 1)
-  & over movementTimer (\t -> if t <= 0 then mv else if et ^. hitTimer < 0 then t - 1 else t)
   & over hitTimer (\t -> if t <= 0 then -1 else t - 1)
 
 

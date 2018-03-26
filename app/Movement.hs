@@ -4,6 +4,10 @@
 {-# LANGUAGE DuplicateRecordFields  #-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Movement where
 
@@ -17,6 +21,9 @@ import Play.Engine.Settings
 import Data.Maybe
 import Control.Monad.Except
 import Control.Lens
+import Control.DeepSeq
+import GHC.Generics
+import Data.Typeable
 import qualified Play.Engine.State as State
 import qualified Control.Monad.State as SM
 import qualified Linear
@@ -33,11 +40,12 @@ data Movement
   , _acceleration :: !FPoint
   , _accelerationTimer :: !Int
   }
+  deriving (Show, Eq, Generic, Typeable, NFData)
 
 makeFieldsNoPrefix ''Movement
 
 make :: FPoint -> FPoint -> Movement
-make accel maxspeed =
+make !accel !maxspeed =
   Movement
   { _posFloatPart = Point 0 0
   , _speed = Point 0 0
@@ -47,7 +55,7 @@ make accel maxspeed =
   }
 
 updateMovement :: FPoint -> Movement -> Movement
-updateMovement direction mv =
+updateMovement !direction !mv =
   let
     updateSpeedC c spd =
       let
@@ -60,27 +68,27 @@ updateMovement direction mv =
           then limit (mv ^. maxSpeed . c) . (+ accel) $ spd
           else spd
   in
-    mv
+    force $ mv
     & over (speed . x) (updateSpeedC x)
     & over (speed . y) (updateSpeedC y)
     & over accelerationTimer (\t -> if t <= 0 then 1 else t - 1)
 
 limit :: Float -> Float -> Float
-limit lim n
+limit !lim !n
   | abs n > lim = normalize n * lim
   | otherwise = n
 
 normalize :: Float -> Float
-normalize n
+normalize !n
   | n == 0 = 0
   | n > 0 = n / n
   | otherwise = (-1) * (n / n)
 
 update :: FPoint -> Movement -> (Movement, IPoint)
-update dir mv =
+update !dir !mv =
   let
     spd = (mv ^. speed) `addPoint` (mv ^. posFloatPart)
     addition = fmap (\s -> if s < 0 then ceiling s else floor s) spd
     pfp = spd `addPoint` fmap (fromIntegral . negate) addition
   in
-    (set posFloatPart pfp $ updateMovement dir mv, addition)
+    force (set posFloatPart pfp $ updateMovement dir mv, addition)
