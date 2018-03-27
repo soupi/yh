@@ -16,6 +16,7 @@ import Play.Engine.Settings
 import Data.Maybe
 import Control.Monad.Except
 import Control.Lens
+import Control.DeepSeq
 import qualified Play.Engine.State as State
 import qualified Control.Monad.State as SM
 import qualified Linear
@@ -37,6 +38,27 @@ data MainChar
   }
 
 makeFieldsNoPrefix ''MainChar
+
+instance NFData MainChar where
+  rnf (MainChar {_pos, _size, _hitTimer, _movement, _health, _bulletsTimer}) =
+    rnf _pos
+    `seq` rnf _size
+    `seq` rnf _direction
+    `seq` rnf _movement
+    `seq` rnf _hitTimer
+    `seq` rnf _bulletsTimer
+    `seq` rnf _health
+    `seq` rnf _transparency
+
+instance Eq MainChar where
+  mc1 == mc2 =
+    mc1 ^. pos == mc2 ^. pos
+    && mc1 ^. size == mc2 ^. size
+
+instance Ord MainChar where
+  mc1 <= mc2 =
+    mc1 ^. pos <= mc2 ^. pos
+    && mc1 ^. size <= mc2 ^. size
 
 wantedAssets :: [(String, FilePath)]
 wantedAssets =

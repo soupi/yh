@@ -7,6 +7,7 @@
 module Enemy where
 
 import qualified SDL
+import qualified SDL.Primitive as SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL
 
 import Data.Maybe
@@ -16,6 +17,7 @@ import Play.Engine.Input
 import Play.Engine.Settings
 import Control.Monad.Except
 import Control.Lens
+import Control.DeepSeq
 import qualified Play.Engine.State as State
 import qualified Control.Monad.State as SM
 import qualified Linear
@@ -38,12 +40,38 @@ data Enemy
   , _health :: !Int
   , _timers :: !EnemyTimers
   }
-
 data EnemyTimers
   = EnemyTimers
   { _bulletsTimer :: !Int
   , _hitTimer :: !Int
   }
+
+
+instance NFData Enemy where
+  rnf (Enemy {_pos, _size, _movement, _health, _degree, _timers}) =
+    rnf _pos
+    `seq` rnf _size
+    `seq` rnf _degree
+    `seq` rnf _movement
+    `seq` rnf _timers
+    `seq` rnf _health
+    `seq` rnf _transparency
+
+instance NFData EnemyTimers where
+  rnf (EnemyTimers {_hitTimer, _bulletsTimer}) =
+    rnf _hitTimer
+    `seq` rnf _bulletsTimer
+
+
+instance Eq Enemy where
+  mc1 == mc2 =
+    mc1 ^. pos == mc2 ^. pos
+    && mc1 ^. size == mc2 ^. size
+
+instance Ord Enemy where
+  mc1 <= mc2 =
+    mc1 ^. pos <= mc2 ^. pos
+    && mc1 ^. size <= mc2 ^. size
 
 makeFieldsNoPrefix ''Enemy
 makeFieldsNoPrefix ''EnemyTimers
@@ -159,11 +187,17 @@ render :: SDL.Renderer -> Enemy -> IO ()
 render renderer enemy = do
   let
     rect = toRect (enemy ^. pos) (enemy ^. size)
-    h = fromIntegral $ enemy ^. health * 3
+    h = fromIntegral $ 255 - max 0 (enemy ^. health * 2)
   if enemy ^. timers . hitTimer > 0 && enemy ^. timers . hitTimer `mod` 6 < 3
   then do
-    SDL.rendererDrawColor renderer SDL.$= Linear.V4 255 (255 - h) (255 - h) 150
-    SDL.drawRect renderer (Just rect)
-    SDL.fillRect renderer (Just rect)
+    let
+      colour = Linear.V4 255 (255 - h) (255 - h) 150
+      radius = fromIntegral $ enemy ^. size . x `div` 2
+      center =
+        Linear.V2
+          (fromIntegral (enemy ^. pos . x) + radius)
+          (fromIntegral (enemy ^. pos . y) + radius)
+    SDL.circle renderer center radius colour
+    SDL.fillCircle renderer center radius colour
   else
     SDL.copy renderer (enemy ^. texture) Nothing (Just rect)

@@ -77,11 +77,11 @@ apToPoint f !p1 !p2 =
 updateList :: (a -> [a]) -> DL.DList a -> DL.DList a
 updateList f = DL.foldr (\x acc -> DL.fromList (f x) `DL.append` acc) DL.empty
 
-updateListWith :: NFData b => b -> (b -> b -> b) -> (a -> ([a], b)) -> DL.DList a -> (DL.DList a, b)
+updateListWith :: b -> (b -> b -> b) -> (a -> ([a], b)) -> DL.DList a -> (DL.DList a, b)
 updateListWith start combine f = flip DL.foldr (DL.empty, start) $ \x !acc ->
   case (f x, acc) of
-    (([], b), (aacc, bacc)) -> (aacc, force $ combine bacc b)
-    ((xs, b), (aacc, bacc)) -> (DL.fromList xs `DL.append` aacc, force $ combine bacc b)
+    (([], b), (aacc, bacc)) -> (aacc, combine bacc b)
+    ((xs, b), (aacc, bacc)) -> (DL.fromList xs `DL.append` aacc, combine bacc b)
 
 
 toRect :: IPoint -> Size -> SDL.Rectangle C.CInt

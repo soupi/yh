@@ -23,6 +23,7 @@ import qualified Play.Engine.LoadTextures as LT
 import qualified Control.Monad.State as SM
 import qualified Linear
 import qualified Data.DList as DL
+import qualified Data.Map as M
 
 
 import Bullet hiding (update, render)
@@ -87,10 +88,10 @@ update input state = do
     bimap mconcat (foldr (.) id) . unzip <$> traverse (Enemy.update input) (state ^. enemies)
   let
     (mcBullets', enemiesHit) =
-      updateListWith False (||) (Bullet.update wSize (state ^. enemies)) . addMCBullets $ state ^. mcBullets
+      updateListWith M.empty (M.unionWith (++)) (Bullet.update wSize (state ^. enemies)) . addMCBullets $ state ^. mcBullets
 
     (enemyBullets', mcHit) =
-      updateListWith False (||) (Bullet.update wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
+      updateListWith M.empty (M.unionWith (++)) (Bullet.update wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
 
     addEnemyM
       | state ^. enemyTimer == 0 && length (state ^. enemies) < 2
@@ -104,9 +105,9 @@ update input state = do
   let
     newState =
       state
-        & set mc (SB.checkHit (state ^. enemyBullets) mc')
+        & set mc (SB.checkHit enemyBullets' mc')
         & set enemies enemies'
-        & over enemies (addEnemy . map (Enemy.checkHit (state ^. mcBullets)))
+        & over enemies (addEnemy . map (Enemy.checkHit mcBullets'))
         & set mcBullets mcBullets'
         & set enemyBullets enemyBullets'
         & over bg SBG.updateSBG

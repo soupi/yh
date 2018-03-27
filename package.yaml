@@ -22,6 +22,7 @@ dependencies:
 - lens
 - bytestring
 - sdl2
+- sdl2-gfx
 - sdl2-image
 - linear
 - deepseq
