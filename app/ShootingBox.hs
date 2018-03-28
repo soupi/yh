@@ -28,13 +28,13 @@ import Bullet
 
 data MainChar
   = MainChar
-  { _pos :: !IPoint
-  , _size :: !Size
-  , _movement :: MV.Movement
+  { _pos :: {-# UNPACK #-} !IPoint
+  , _size :: {-# UNPACK #-} !Size
+  , _movement :: {-# UNPACK #-} !MV.Movement
   , _texture :: SDL.Texture
-  , _hitTimer :: !Int
-  , _bulletsTimer :: !Int
-  , _health :: !Int
+  , _hitTimer :: {-# UNPACK #-} !Int
+  , _bulletsTimer :: {-# UNPACK #-} !Int
+  , _health :: {-# UNPACK #-} !Int
   }
 
 makeFieldsNoPrefix ''MainChar
@@ -92,7 +92,7 @@ update input mc = do
     direction = keysToMovement 1 input
     (mv, move) =
       MV.update direction
-        . set MV.maxSpeed (if keyPressed KeyB input then Point 2 2 else Point 4 4)
+        . set MV.maxSpeed (if keyPressed KeyB input then Point 1.2 1.2 else Point 4 4)
         $ (mc ^. movement)
 
     addBullets

@@ -64,6 +64,8 @@ executables:
     ghc-options:
     - -O2
     - -rtsopts
+    - -funfolding-use-threshold=16
+    - -optc-O3
 
     default-extensions:
     - ConstraintKinds

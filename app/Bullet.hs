@@ -24,13 +24,13 @@ import Debug.Trace
 
 data Bullet
   = Bullet
-  { _pos :: !IPoint
-  , _size :: !Size
-  , _direction :: !FPoint
-  , _movement :: !MV.Movement
-  , _damage :: !Int
+  { _pos :: {-# UNPACK #-} !IPoint
+  , _size :: {-# UNPACK #-} !Size
+  , _direction :: {-# UNPACK #-} !FPoint
+  , _movement :: {-# UNPACK #-} !MV.Movement
+  , _damage :: {-# UNPACK #-} !Int
   , _texture :: SDL.Texture
-  , _transparency :: !Word8
+  , _transparency :: {-# UNPACK #-} !Word8
   }
 
 makeFieldsNoPrefix ''Bullet

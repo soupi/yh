@@ -88,10 +88,10 @@ update input state = do
     bimap mconcat (foldr (.) id) . unzip <$> traverse (Enemy.update input) (state ^. enemies)
   let
     (mcBullets', enemiesHit) =
-      updateListWith M.empty (M.unionWith (++)) (Bullet.update wSize (state ^. enemies)) . addMCBullets $ state ^. mcBullets
+      updateListWith M.empty (const $ const M.empty) (Bullet.update wSize (state ^. enemies)) . addMCBullets $ state ^. mcBullets
 
     (enemyBullets', mcHit) =
-      updateListWith M.empty (M.unionWith (++)) (Bullet.update wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
+      updateListWith M.empty (const $ const M.empty) (Bullet.update wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
 
     addEnemyM
       | state ^. enemyTimer == 0 && length (state ^. enemies) < 2

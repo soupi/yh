@@ -63,25 +63,22 @@ supplyBoth = (=<<)
 absPoint :: IPoint -> IPoint
 absPoint = fmap abs
 
-addPoint :: Num a => Point a -> Point a -> Point a
-addPoint = apToPoint (+)
+addPoint :: (NFData a, Num a) => Point a -> Point a -> Point a
+addPoint (Point x1 y1) (Point x2 y2) = force $ Point (x1 + x2) (y1 + y2)
+{-# INLINE addPoint #-}
 
-mulPoint :: Num a => Point a -> Point a -> Point a
-mulPoint = apToPoint (*)
-
-apToPoint :: (a -> a -> a) -> Point a -> Point a -> Point a
-apToPoint f !p1 !p2 =
-  p1 & over x (f (p2 ^. x))
-     & over y (f (p2 ^. y))
+mulPoint :: (NFData a, Num a) => Point a -> Point a -> Point a
+mulPoint (Point x1 y1) (Point x2 y2) = force $ Point (x1 * x2) (y1 * y2)
+{-# INLINE mulPoint #-}
 
 updateList :: (a -> [a]) -> DL.DList a -> DL.DList a
 updateList f = DL.foldr (\x acc -> DL.fromList (f x) `DL.append` acc) DL.empty
 
-updateListWith :: b -> (b -> b -> b) -> (a -> ([a], b)) -> DL.DList a -> (DL.DList a, b)
+updateListWith :: NFData b => b -> (b -> b -> b) -> (a -> ([a], b)) -> DL.DList a -> (DL.DList a, b)
 updateListWith start combine f = flip DL.foldr (DL.empty, start) $ \x !acc ->
   case (f x, acc) of
-    (([], b), (aacc, bacc)) -> (aacc, combine bacc b)
-    ((xs, b), (aacc, bacc)) -> (DL.fromList xs `DL.append` aacc, combine bacc b)
+    (([], b), (aacc, bacc)) -> (aacc, force $ combine bacc b)
+    ((xs, b), (aacc, bacc)) -> (DL.fromList xs `DL.append` aacc, force $ combine bacc b)
 
 
 toRect :: IPoint -> Size -> SDL.Rectangle C.CInt

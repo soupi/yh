@@ -32,18 +32,18 @@ import qualified Movement as MV
 
 data Enemy
   = Enemy
-  { _pos :: !IPoint
-  , _size :: !Size
-  , _movement :: !MV.Movement
-  , _direction :: !FPoint
+  { _pos :: {-# UNPACK #-} !IPoint
+  , _size :: {-# UNPACK #-} !Size
+  , _movement :: {-# UNPACK #-} !MV.Movement
+  , _direction :: {-# UNPACK #-} !FPoint
   , _texture :: SDL.Texture
-  , _attack :: !A.Attack
-  , _health :: !Int
-  , _timers :: !EnemyTimers
+  , _attack :: {-# UNPACK #-} !A.Attack
+  , _health :: {-# UNPACK #-} !Int
+  , _timers :: {-# UNPACK #-} !EnemyTimers
   }
 data EnemyTimers
   = EnemyTimers
-  { _hitTimer :: !Int
+  { _hitTimer :: {-# UNPACK #-} !Int
   }
 
 
@@ -92,7 +92,7 @@ mkEnemy posi ts = do
           , _direction = Point 0 1
           , _movement = MV.make (Point 0.1 0.1) (Point 1.5 1.5)
           , _texture = txt
-          , _attack = SA.make 2 (2, 1) txt
+          , _attack = SA.make 2 (3, 1) txt
           , _health = 100
           , _timers = initEnemyTimers
           }

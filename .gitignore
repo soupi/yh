@@ -64,6 +64,7 @@ cabal-dev
 cabal.sandbox.config
 *.ps
 *.prof
+*.prof.*
 *.aux
 *.hp
 .stack-work/
