@@ -25,7 +25,8 @@ import qualified Data.DList as DL
 
 
 import Bullet
-import qualified Play.Engine.ScrollingBackground as SBG
+import qualified Attack as A
+import qualified Attack.SpiralAttack as SA
 import qualified Movement as MV
 
 
@@ -36,32 +37,28 @@ data Enemy
   , _movement :: !MV.Movement
   , _direction :: !FPoint
   , _texture :: SDL.Texture
-  , _degree :: !Float
+  , _attack :: !A.Attack
   , _health :: !Int
   , _timers :: !EnemyTimers
   }
 data EnemyTimers
   = EnemyTimers
-  { _bulletsTimer :: !Int
-  , _hitTimer :: !Int
+  { _hitTimer :: !Int
   }
 
 
 instance NFData Enemy where
-  rnf (Enemy {_pos, _size, _movement, _health, _degree, _timers}) =
+  rnf (Enemy {_pos, _size, _movement, _health, _timers}) =
     rnf _pos
     `seq` rnf _size
-    `seq` rnf _degree
     `seq` rnf _movement
     `seq` rnf _timers
     `seq` rnf _health
     `seq` rnf _transparency
 
 instance NFData EnemyTimers where
-  rnf (EnemyTimers {_hitTimer, _bulletsTimer}) =
+  rnf (EnemyTimers {_hitTimer}) =
     rnf _hitTimer
-    `seq` rnf _bulletsTimer
-
 
 instance Eq Enemy where
   mc1 == mc2 =
@@ -95,15 +92,14 @@ mkEnemy posi ts = do
           , _direction = Point 0 1
           , _movement = MV.make (Point 0.1 0.1) (Point 1.5 1.5)
           , _texture = txt
-          , _degree = 90
+          , _attack = SA.make 2 (2, 1) txt
           , _health = 100
           , _timers = initEnemyTimers
           }
 
 initEnemyTimers :: EnemyTimers
 initEnemyTimers = EnemyTimers
-  { _bulletsTimer = 2
-  , _hitTimer = -1
+  { _hitTimer = -1
   }
 
 update :: Input -> Enemy -> Result ([Enemy], DL.DList Bullet -> DL.DList Bullet)
@@ -115,16 +111,19 @@ update input enemy = do
       MV.update dir
         $ (enemy ^. movement)
 
+    (newBullets, attack') =
+      (enemy ^. attack . A.attackUpdate) (enemy ^. pos) (enemy ^. size) (enemy ^. attack)
+
     enemy' =
       enemy
       & over pos (`addPoint` move)
       & set movement mv
-      & over timers (updateTimers (initEnemyTimers ^. bulletsTimer))
+      & over timers updateTimers
       & set direction dir
-      & over degree (\d -> if d >= 360 then 1 else d+1.5)
+      & set attack attack'
   pure
     ( if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0 then [] else pure enemy'
-    , addBullets enemy
+    , if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0 then id else DL.append newBullets
     )
 
 changeDirection :: Size -> Enemy -> FPoint
@@ -147,29 +146,10 @@ changeDirection wsize enemy
   | otherwise
   = enemy ^. direction
 
-
-
-addBullets :: Enemy -> DL.DList Bullet -> DL.DList Bullet 
-addBullets enemy
-  | enemy ^. timers . bulletsTimer == 0
-  --, enemy ^. timers . hitTimer < 0
-  , enemy ^. direction . y == 0
-  = let
-      Point w h = Point (enemy ^. size . x) (enemy ^. size . y)
-      d = (enemy ^. degree) * (pi / 180)
-      dir = Point (cos d) (sin d)
-    in DL.append $ DL.fromList
-      [ mkBullet (enemy ^. texture) dir (Point 1 1) (fmap (3*) dir) 5 255
-        $ ((enemy ^. pos) `addPoint` Point (enemy ^. size . x `div` 2) (enemy ^. size . y `div` 2))
-          `addPoint` fmap (floor . (30*)) dir
-      ]
-  | otherwise = id
-
-updateTimers :: Int -> EnemyTimers -> EnemyTimers
-updateTimers bv et =
+updateTimers :: EnemyTimers -> EnemyTimers
+updateTimers et =
   et
-  & over bulletsTimer  (\t -> if t <= 0 then bv else t - 1)
-  & over hitTimer (\t -> if t <= 0 then -1 else t - 1)
+    & over hitTimer (\t -> if t <= 0 then -1 else t - 1)
 
 
 checkHit :: DL.DList Bullet -> Enemy -> Enemy

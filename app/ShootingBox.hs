@@ -120,11 +120,11 @@ update input mc = do
 newBullet :: MainChar -> [Bullet]
 newBullet mc
   | mc ^. size . x == charSize ^. x =
-    [ mkBullet (mc ^. texture) (Point 0 (-1)) (Point 0 10) (Point 0 10) 2 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 4) 0)
-    , mkBullet (mc ^. texture) (Point 0 (-1)) (Point 0 10) (Point 0 10) 2 100 ((mc ^. pos) `addPoint` Point ((mc ^. size . x `div` 4) * 3) 0)
+    [ mkBullet (mc ^. texture) (Point 0 (-1)) (MV.make (Point 0 10) (Point 0 10)) 2 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 4) 0)
+    , mkBullet (mc ^. texture) (Point 0 (-1)) (MV.make (Point 0 10) (Point 0 10)) 2 100 ((mc ^. pos) `addPoint` Point ((mc ^. size . x `div` 4) * 3) 0)
     ]
   | otherwise =
-    [ mkBullet (mc ^. texture) (Point 0 (-1)) (Point 0 10) (Point 0 10) 5 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 2) 0)
+    [ mkBullet (mc ^. texture) (Point 0 (-1)) (MV.make (Point 0 10) (Point 0 10)) 5 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 2) 0)
     ]
 
 

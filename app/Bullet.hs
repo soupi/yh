@@ -56,10 +56,10 @@ instance NFData Bullet where
     `seq` rnf _damage
     `seq` rnf _transparency
 
-mkBullet :: SDL.Texture -> FPoint -> FPoint -> FPoint -> Int -> Word8 -> IPoint -> Bullet
-mkBullet txt dir accel maxspeed dmg transp position = Bullet
+mkBullet :: SDL.Texture -> FPoint -> MV.Movement -> Int -> Word8 -> IPoint -> Bullet
+mkBullet txt dir mv dmg transp position = Bullet
   { _pos = fmap fromIntegral position `addPoint` Point (-6) (-12)
-  , _movement = MV.make accel maxspeed
+  , _movement = mv
   , _size = Point 12 12
   , _direction = dir
   , _damage = dmg
