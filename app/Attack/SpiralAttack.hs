@@ -20,11 +20,11 @@ import qualified Attack
 import qualified Movement as MV
 
 
-make :: Int -> (Int, Float) -> SDL.Texture -> Attack
-make numOfOutPoints (every, change) txt =
+make :: Int -> Int -> (Int, Float) -> FPoint -> SDL.Texture -> Attack
+make numOfOutPoints initAngle' (every, change) speed txt =
   Attack.make
-    (MV.make (Point 1 1) (Point 3 3))
-    (mkAngles numOfOutPoints)
+    (MV.make (Point 1 1) speed)
+    (mkAngles initAngle' numOfOutPoints)
     every
     txt
     spiralUpdate
@@ -35,9 +35,9 @@ make numOfOutPoints (every, change) txt =
       Attack.update posi sz attack
         & over (_2 . outAngles) (map $ (+) change)
 
-    mkAngles :: Int -> [Float]
-    mkAngles ((`mod` 100) -> n) =
+    mkAngles :: Int -> Int -> [Float]
+    mkAngles initAngle ((`mod` 100) -> n) =
       let
         m = 360 / fromIntegral n
       in
-        force $ map ((*) m . fromIntegral) [1..n]
+        force $ map ((+) (fromIntegral initAngle) . (*) m . fromIntegral) [1..n]

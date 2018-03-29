@@ -31,6 +31,7 @@ import qualified Bullet
 import qualified ShootingBox as SB
 import qualified Enemy as Enemy
 import qualified Enemy.SideToSideSpiral as SSE
+import qualified Enemy.CrossDown as CD
 import qualified Play.Engine.ScrollingBackground as SBG
 
 data State
@@ -41,7 +42,8 @@ data State
   , _mcBullets :: DL.DList Bullet
   , _enemyBullets :: DL.DList Bullet
   , _textures :: [(String, SDL.Texture)]
-  , _enemyTimer :: Int
+  , _enemyTimer :: !Int
+  , _enemyDir :: Either () ()
   }
 
 makeFieldsNoPrefix ''State
@@ -71,7 +73,7 @@ initState ts = do
       throwError ["Texture not found: bg"]
     Just bgt -> do
       mc' <- (SB.mkMainChar ts)
-      enemy' <- (SSE.make (Point 200 (-180)) ts)
+      enemy' <- (CD.make (Point 350 (-180)) (Left ()) ts)
       pure $ State
         (SBG.mkSBG bgt 1 (Point 800 1000) (Point 0 0))
         mc'
@@ -79,7 +81,10 @@ initState ts = do
         (DL.fromList [])
         (DL.fromList [])
         ts
-        200
+        initEnemyTimer
+        (Right ())
+
+initEnemyTimer = 60
 
 update :: Input -> State -> Result (State.Command, State)
 update input state = do
@@ -95,8 +100,8 @@ update input state = do
       updateListWith M.empty (const $ const M.empty) (Bullet.update wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
 
     addEnemyM
-      | state ^. enemyTimer == 0 && length (state ^. enemies) < 2
-      = (:) <$> SSE.make (Point 200 (-180)) (state ^. textures)
+      | state ^. enemyTimer == 0 -- && length (state ^. enemies) < 2
+      = (:) <$> CD.make (Point 350 (-180)) (state ^. enemyDir) (state ^. textures)
 
       | otherwise
       = pure id
@@ -112,7 +117,8 @@ update input state = do
         & set mcBullets mcBullets'
         & set enemyBullets enemyBullets'
         & over bg SBG.updateSBG
-        & over enemyTimer (\t -> if t <= 0 then 300 else t - 1)
+        & over enemyTimer (\t -> if t <= 0 then initEnemyTimer else t - 1)
+        & over enemyDir (if state ^. enemyTimer == 0 then flipEnemyDir else id)
 
   -- state stack manipulation
   if
@@ -123,6 +129,11 @@ update input state = do
       pure (State.Done, state)
     | otherwise ->
       pure (State.None, newState)
+
+flipEnemyDir :: Either () () -> Either () ()
+flipEnemyDir = \case
+  Right () -> Left ()
+  Left () -> Right ()
 
 render :: SDL.Renderer -> State -> IO ()
 render renderer state = do

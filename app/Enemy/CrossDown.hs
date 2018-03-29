@@ -29,8 +29,8 @@ wantedAssets =
   [ ("moon", "assets/moon2.png")
   ]
 
-make :: IPoint -> [(String, SDL.Texture)] -> Result Enemy
-make posi ts = do
+make :: IPoint -> Either () () -> [(String, SDL.Texture)] -> Result Enemy
+make posi dir ts = do
   let textName = "moon"
   case lookup textName ts of
     Nothing ->
@@ -39,18 +39,22 @@ make posi ts = do
       pure . mkEnemy $
         MakeEnemy
           { mkePos = posi
-          , mkeMov = leftRightMovement
+          , mkeMov = crossMovement dir
           , mkeHealth = 100
           , mkeDirChanger = changeDirection
-          , mkeAtk = singleSpiralAttack txt
+          , mkeAtk = downAttack txt
           , mkeEnemyTxt = txt
           }
 
-leftRightMovement :: MV.Movement
-leftRightMovement = MV.make (Point 0.1 0.1) (Point 1.5 1.5)
+crossMovement :: Either () () -> MV.Movement
+crossMovement dir = MV.make (Point (mul 0.1) 0.3) (Point 4 2.5)
+  where
+    mul = case dir of
+      Left () -> (*) (-1)
+      Right () -> (*) 1
 
-singleSpiralAttack :: SDL.Texture -> A.Attack
-singleSpiralAttack = SA.make 1 (3, 1)
+downAttack :: SDL.Texture -> A.Attack
+downAttack = SA.make 1 90 (10, 0) (Point 8 8)
 
 changeDirection :: Size -> Enemy -> FPoint
 changeDirection wsize enemy
@@ -58,20 +62,10 @@ changeDirection wsize enemy
   , enemy ^. direction . y == 0
   = Point 0 1
 
-  | enemy ^. pos . y >= 100
+  | enemy ^. pos . y >= 0
   , enemy ^. direction . y == 1
-  = Point 1 0
-
-  | enemy ^. pos . x > 2 * (wsize ^. x `div` 3) - enemy ^. size . x
-  , enemy ^. direction . y == 0
-  = Point (-1) 0
-
-  | enemy ^. pos . x <= (wsize ^. x `div` 3)
-  , enemy ^. direction . y == 0
-  = Point 1 0
-
-  | enemy ^. health <= 0
-  = Point 0 0
+  , enemy ^. direction . x == 0
+  = Point 1 1
 
   | otherwise
   = enemy ^. direction

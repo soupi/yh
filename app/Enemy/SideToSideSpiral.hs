@@ -50,7 +50,7 @@ leftRightMovement :: MV.Movement
 leftRightMovement = MV.make (Point 0.1 0.1) (Point 1.5 1.5)
 
 singleSpiralAttack :: SDL.Texture -> A.Attack
-singleSpiralAttack = SA.make 2 (2, 1.2)
+singleSpiralAttack = SA.make 2 0 (2, 1.2) (Point 3 3)
 
 changeDirection :: Size -> Enemy -> FPoint
 changeDirection wsize enemy

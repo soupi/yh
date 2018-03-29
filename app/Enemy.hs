@@ -127,15 +127,16 @@ update input enemy = do
       & set direction dir
       & set attack attack'
 
-    result =
-      if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0
+  pure
+    ( if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0
         || not (isInWindow wsize (enemy ^. pos) (enemy ^. size))
            && (enemy' ^. timers . gracePeriodTimer) < 0
         then []
         else pure enemy'
-  pure
-    ( if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0 then [] else pure enemy'
-    , if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0 then id else DL.append newBullets
+    , if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0
+        || not (isInWindow wsize (enemy ^. pos) (Point 0 0))
+        then id
+        else DL.append newBullets
     )
 
 updateTimers :: EnemyTimers -> EnemyTimers
