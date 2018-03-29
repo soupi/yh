@@ -30,6 +30,7 @@ import Bullet hiding (update, render)
 import qualified Bullet
 import qualified ShootingBox as SB
 import qualified Enemy as Enemy
+import qualified Enemy.SideToSideSpiral as SSE
 import qualified Play.Engine.ScrollingBackground as SBG
 
 data State
@@ -50,7 +51,7 @@ wantedAssets =
   [ ("bg", "assets/bg.png")
   ]
   ++ SB.wantedAssets
-  ++ Enemy.wantedAssets
+  ++ SSE.wantedAssets
 
 mkGameState :: State.State
 mkGameState = LT.mkState wantedAssets mkState
@@ -70,7 +71,7 @@ initState ts = do
       throwError ["Texture not found: bg"]
     Just bgt -> do
       mc' <- (SB.mkMainChar ts)
-      enemy' <- (Enemy.mkEnemy (Point 200 (-180)) ts)
+      enemy' <- (SSE.make (Point 200 (-180)) ts)
       pure $ State
         (SBG.mkSBG bgt 1 (Point 800 1000) (Point 0 0))
         mc'
@@ -95,7 +96,7 @@ update input state = do
 
     addEnemyM
       | state ^. enemyTimer == 0 && length (state ^. enemies) < 2
-      = (:) <$> Enemy.mkEnemy (Point 200 (-180)) (state ^. textures)
+      = (:) <$> SSE.make (Point 200 (-180)) (state ^. textures)
 
       | otherwise
       = pure id

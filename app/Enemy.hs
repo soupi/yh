@@ -36,6 +36,7 @@ data Enemy
   , _size :: {-# UNPACK #-} !Size
   , _movement :: {-# UNPACK #-} !MV.Movement
   , _direction :: {-# UNPACK #-} !FPoint
+  , _directionChanger :: Size -> Enemy -> FPoint
   , _texture :: SDL.Texture
   , _attack :: {-# UNPACK #-} !A.Attack
   , _health :: {-# UNPACK #-} !Int
@@ -44,6 +45,7 @@ data Enemy
 data EnemyTimers
   = EnemyTimers
   { _hitTimer :: {-# UNPACK #-} !Int
+  , _gracePeriodTimer :: {-# UNPACK #-} !Int
   }
 
 
@@ -54,11 +56,13 @@ instance NFData Enemy where
     `seq` rnf _movement
     `seq` rnf _timers
     `seq` rnf _health
+    `seq` rnf _attack
     `seq` rnf _transparency
 
 instance NFData EnemyTimers where
   rnf (EnemyTimers {_hitTimer}) =
     rnf _hitTimer
+    `seq` rnf _gracePeriodTimer
 
 instance Eq Enemy where
   mc1 == mc2 =
@@ -73,40 +77,41 @@ instance Ord Enemy where
 makeFieldsNoPrefix ''Enemy
 makeFieldsNoPrefix ''EnemyTimers
 
-wantedAssets :: [(String, FilePath)]
-wantedAssets =
-  [ ("moon", "assets/moon2.png")
-  ]
+data MakeEnemy
+  = MakeEnemy
+  { mkePos :: {-# UNPACK #-} !IPoint
+  , mkeMov :: {-# UNPACK #-} !MV.Movement
+  , mkeHealth :: {-# UNPACK #-} !Int
+  , mkeDirChanger :: Size -> Enemy -> FPoint
+  , mkeAtk :: {-# UNPACK #-} !A.Attack
+  , mkeEnemyTxt :: SDL.Texture
+  }
 
-mkEnemy :: IPoint -> [(String, SDL.Texture)] -> Result Enemy
-mkEnemy posi ts = do
-  let textName = "moon"
-  case lookup textName ts of
-    Nothing ->
-      throwError ["Texture not found: " ++ textName]
-    Just txt ->
-      pure $
-        Enemy
-          { _pos = posi
-          , _size = Point 96 96
-          , _direction = Point 0 1
-          , _movement = MV.make (Point 0.1 0.1) (Point 1.5 1.5)
-          , _texture = txt
-          , _attack = SA.make 2 (3, 1) txt
-          , _health = 100
-          , _timers = initEnemyTimers
-          }
+mkEnemy :: MakeEnemy -> Enemy
+mkEnemy MakeEnemy{..} =
+  Enemy
+    { _pos = mkePos
+    , _size = Point 96 96
+    , _direction = Point 0 0
+    , _movement = mkeMov
+    , _directionChanger = mkeDirChanger
+    , _texture = mkeEnemyTxt
+    , _attack = mkeAtk
+    , _health = mkeHealth
+    , _timers = initEnemyTimers
+    }
 
 initEnemyTimers :: EnemyTimers
 initEnemyTimers = EnemyTimers
   { _hitTimer = -1
+  , _gracePeriodTimer = 60 * 5
   }
 
 update :: Input -> Enemy -> Result ([Enemy], DL.DList Bullet -> DL.DList Bullet)
 update input enemy = do
   wsize <- _windowSize <$> SM.get
   let
-    dir = changeDirection wsize enemy
+    dir = (enemy ^. directionChanger) wsize enemy
     (mv, move) =
       MV.update dir
         $ (enemy ^. movement)
@@ -121,35 +126,23 @@ update input enemy = do
       & over timers updateTimers
       & set direction dir
       & set attack attack'
+
+    result =
+      if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0
+        || not (isInWindow wsize (enemy ^. pos) (enemy ^. size))
+           && (enemy' ^. timers . gracePeriodTimer) < 0
+        then []
+        else pure enemy'
   pure
     ( if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0 then [] else pure enemy'
     , if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0 then id else DL.append newBullets
     )
 
-changeDirection :: Size -> Enemy -> FPoint
-changeDirection wsize enemy
-  | enemy ^. pos . y >= 100
-  , enemy ^. direction . y == 1
-  = Point 1 0
-
-  | enemy ^. pos . x > 2 * (wsize ^. x `div` 3) - enemy ^. size . x
-  , enemy ^. direction . y == 0
-  = Point (-1) 0
-
-  | enemy ^. pos . x <= (wsize ^. x `div` 3)
-  , enemy ^. direction . y == 0
-  = Point 1 0
-
-  | enemy ^. health <= 0
-  = Point 0 0
-
-  | otherwise
-  = enemy ^. direction
-
 updateTimers :: EnemyTimers -> EnemyTimers
 updateTimers et =
   et
     & over hitTimer (\t -> if t <= 0 then -1 else t - 1)
+    & over gracePeriodTimer (\t -> if t <= 0 then -1 else t - 1)
 
 
 checkHit :: DL.DList Bullet -> Enemy -> Enemy

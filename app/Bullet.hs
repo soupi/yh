@@ -70,7 +70,7 @@ mkBullet txt dir mv dmg transp position = Bullet
 update wsize entities b =
   case mapMaybe (isTouching b) entities of
     []
-      | b ^. pos . y < 0 || b ^. pos . y > wsize ^. y
+      | not $ isInWindow wsize (b ^. pos) (b ^. size)
       -> ([], M.empty)
       | otherwise ->
         let

@@ -155,3 +155,11 @@ pop = \case
 replace :: a -> Stack a -> Stack a
 replace x = \case
   Stack _ xs -> Stack (x `seq` x) xs
+
+isInWindow :: Size -> IPoint -> Size -> Bool
+isInWindow wsize pos sz
+  | pos ^. y + sz ^. y < 0 || pos ^. y > wsize ^. y
+  || pos ^. x + sz ^. x < 0 || pos ^. x > wsize ^. x
+  = False
+
+  | otherwise = True
