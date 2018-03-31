@@ -56,6 +56,7 @@ update responses payload keyPressed (settings, stack) =
 
 render :: (SDL.Window, SDL.Renderer) -> Stack State.State -> IO ()
 render (_, renderer) stack = do
+  SDL.rendererDrawBlendMode renderer SDL.$= SDL.BlendAlphaBlend
   State.renderer renderer stack
   SDL.present renderer
 

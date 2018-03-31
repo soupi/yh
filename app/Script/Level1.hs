@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Script.Level1 where
 
 import qualified SDL
@@ -7,6 +9,7 @@ import Script
 import Play.Engine.Types
 import qualified Enemy.CrossDown as CDE
 import qualified Enemy.SideToSideSpiral as SSE
+import qualified TextBox as TB
 import Debug.Trace
 
 wantedAssets :: [(String, MySDL.ResourceType FilePath)]
@@ -17,7 +20,8 @@ wantedAssets =
 
 level1 :: [(String, SDL.Texture)] -> Script
 level1 ts =
-  [ spawnTwoCDEs (Left ()) (Right ()) ts
+  [ LoadTextBox TB.Up "Hello"
+  , spawnTwoCDEs (Left ()) (Right ()) ts
   , Wait noAction 300
   , spawnTwoCDEs (Right ()) (Left ()) ts
   , Wait noAction 300

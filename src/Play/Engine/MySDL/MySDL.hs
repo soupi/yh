@@ -21,6 +21,7 @@ import qualified Data.Word as Word
 import qualified Foreign.C.Types as C
 import qualified Data.Word as Word
 import qualified Data.Map as M
+import qualified Data.Text as T
 
 import qualified SDL
 import qualified SDL.Image as SDLI
@@ -52,7 +53,6 @@ withWindow title winConf go = do
 
   pure result
 
--- | Create a Surface and pass in as a parameter to function
 withRenderer :: MonadIO m => SDL.Window -> ((SDL.Window, SDL.Renderer) -> m a) -> m a
 withRenderer window go = do
   renderer <- SDL.createRenderer window (-1)
@@ -93,10 +93,6 @@ setBGColor color renderer = do
   SDL.clear renderer
   pure renderer
 
--- | Update window
-updateWindow :: SDL.Window -> IO ()
-updateWindow = SDL.updateWindowSurface
-
 -- | Collect all events from inputs
 collectEvents :: MonadIO m => m [SDL.EventPayload]
 collectEvents = SDL.pollEvent >>= \case
@@ -117,9 +113,12 @@ data ResourceType a
 
 data Request
   = Load ![(String, ResourceType FilePath)]
+  | DestroyTexture SDL.Texture
+  | MakeText (String, FilePath) T.Text
 
 data Response
   = ResourcesLoaded ![(String, SDL.Texture)] ![(String, SDLF.Font)]
+  | NewText SDL.Texture
   | Exception String
 
 data Resources
@@ -135,13 +134,21 @@ initResources =
     <*> newTVarIO M.empty
 
 runRequest :: Resources -> TQueue Response -> SDL.Renderer -> Request -> IO ()
-runRequest resources queue renderer = \case
-  Load files -> flip catch (\(SomeException e) -> atomically $ writeTQueue queue $ Exception $ show e) $ do
-    results <-
-      mapConcurrently
-        (loadResource renderer resources)
-        files
-    atomically $ writeTQueue queue (resourcesToResponse results)
+runRequest resources queue renderer req =
+  flip catch (\(SomeException e) -> atomically $ writeTQueue queue $ Exception $ show e) $
+    case req of
+      Load files -> do
+        results <-
+          mapConcurrently
+            (loadResource renderer resources)
+            files
+        atomically $ writeTQueue queue (resourcesToResponse results)
+      DestroyTexture txt ->
+        SDL.destroyTexture txt
+      MakeText (n, p) txt -> do
+        (_, RFont fnt) <- loadResource renderer resources (n, Font p)
+        text <- SDL.createTextureFromSurface renderer =<< SDLF.solid fnt (Linear.V4 255 255 255 255) txt
+        atomically $ writeTQueue queue $ NewText text
 
 loadResource renderer resources (n, r) =
   case r of

@@ -20,7 +20,7 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Lens
 import qualified Play.Engine.State as State
-import qualified Play.Engine.LoadTextures as LT
+import qualified Play.Engine.Load as Load
 import qualified Control.Monad.State as SM
 import qualified Linear
 import qualified Data.DList as DL
@@ -59,12 +59,12 @@ wantedAssets =
   ++ SSE.wantedAssets
 
 mkGameState :: State.State
-mkGameState = LT.mkState wantedAssets mkState
+mkGameState = Load.mkState wantedAssets mkState
 
 mkState :: [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State.State
 mkState texts fonts = do
   state <- initState texts fonts
-  pure $ State.mkState
+  pure $ State.State $ State.StateF
     state
     update
     render
@@ -88,11 +88,11 @@ initState ts fs = do
 
 initEnemyTimer = 60
 
-update :: Input -> State -> Result (State.Command, State)
+update :: Input -> State -> Result ([MySDL.Request], (State.Command, State))
 update input state = do
   wSize <- _windowSize <$> SM.get
 
-  (acts, script') <- Script.update input (state ^. mc . pos) (state ^. enemies) (state ^. script)
+  (reqs, (acts, script')) <- Script.update input (state ^. mc . pos) (state ^. enemies) (state ^. script)
 
   (mc', addMCBullets) <-
     SB.update
@@ -130,11 +130,11 @@ update input state = do
   if
     | keyReleased KeyC input -> do
       next <- mkState (state ^. textures) (state ^. fonts)
-      pure (State.Push next, state)
+      pure ([], (State.Push next, state))
     | keyReleased KeyD input ->
-      pure (State.Done, state)
+      pure ([], (State.Done, state))
     | otherwise ->
-      pure (State.None, newState)
+      pure (reqs, (State.None, newState))
 
 flipEnemyDir :: Either () () -> Either () ()
 flipEnemyDir = \case
@@ -148,6 +148,7 @@ render renderer state = do
   traverse (Enemy.render renderer) (state ^. enemies)
   forM_ (state ^. mcBullets) (Bullet.render renderer)
   forM_ (state ^. enemyBullets) (Bullet.render renderer)
+  Script.render renderer (state ^. script)
 
 dirToInput :: IPoint -> Input
 dirToInput dir =

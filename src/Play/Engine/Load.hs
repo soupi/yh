@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Play.Engine.LoadTextures where
+module Play.Engine.Load where
 
 import qualified SDL
 import qualified SDL.Font as SDLF

@@ -12,7 +12,6 @@ import Play.Engine.Types
 import Play.Engine.Utils
 import Play.Engine.Settings
 import qualified Play.Engine.State as State
-import qualified Play.Engine.LoadTextures as LT
 import qualified GameState as SB
 
 main :: IO ()
