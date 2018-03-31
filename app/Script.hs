@@ -18,8 +18,8 @@ data Command
   = Wait !Actions Int
   | WaitUntil !Actions (IPoint -> [Enemy] -> Bool)
   | Spawn (Result [Enemy])
-  | LoadTextBox (Result TB.TextBox)
-  | WaitTextBox TB.TextBox
+  | LoadTextBox !Actions (Result TB.TextBox)
+  | WaitTextBox !Actions TB.TextBox
 
 data ScriptData
   = Script
@@ -60,14 +60,14 @@ update input mcPos enemies = \case
   Spawn spawned : rest ->
     (, rest) . (\s -> noAction { spawn = s }) <$> spawned
 
-  LoadTextBox rtb : rest -> do
+  LoadTextBox acts rtb : rest -> do
     tb <- rtb
-    pure (noAction, WaitTextBox tb : rest)
+    pure (acts, WaitTextBox acts tb : rest)
 
-  WaitTextBox tb : rest -> do
+  WaitTextBox acts tb : rest -> do
     TB.update input tb >>= \case
-      Nothing -> pure  (noAction, rest)
-      Just tb' -> pure (noAction, WaitTextBox tb' : rest)
+      Nothing -> pure  (acts, rest)
+      Just tb' -> pure (acts, WaitTextBox acts tb' : rest)
 
 goToLoc :: IPoint -> Command
 goToLoc p =
@@ -80,7 +80,7 @@ render renderer =
   maybe (pure ()) f . listToMaybe
   where
     f = \case
-      WaitTextBox tb ->
+      WaitTextBox _ tb ->
         TB.render renderer tb
       _ -> pure ()
 

@@ -72,7 +72,9 @@ make py spd txt mavatar (Just fnt) =
 
 update :: Input -> TextBox -> Result (Maybe TextBox)
 update input tb
-  | keyPressed KeyA input = pure Nothing
+  | keyClicked KeyA input
+  , (tb ^. textPart) == T.length (tb ^. text)
+  = pure Nothing
   | otherwise = do
     wSize <- _windowSize <$> SM.get
     let
@@ -83,6 +85,15 @@ update input tb
     pure $ pure $ tb
       & set pos (Point 20 locY)
       & set size (Point (wSize ^. x - 40) 200)
+      & over textPart
+        (\tp ->
+           if
+             | keyClicked KeyA input -> T.length (tb ^. text)
+             | tb ^. textSpeed == 0 -> T.length (tb ^. text)
+             | tb ^. textTimer == 0 && tp < T.length (tb ^. text) -> tp+1
+             | otherwise -> tp
+        )
+      & over textTimer (\t -> if t <= 0 then tb ^. textSpeed else t - 1)
 
 
 render :: SDL.Renderer -> TextBox -> IO ()
@@ -98,15 +109,31 @@ render renderer tb
   SDL.rendererDrawColor renderer SDL.$= Linear.V4 100 130 180 200
   SDL.drawRect renderer (Just rect)
 
-  text <- SDL.createTextureFromSurface renderer
-    =<< SDLF.solid (tb ^. font) (Linear.V4 255 255 255 255) (tb ^. text)
-  ti <- SDL.queryTexture text
-  SDL.copy
-    renderer
-    text
-    Nothing
-    (Just $ toRect
-      (fmap (+20) $ tb ^. pos)
-      (Point (fromIntegral $ SDL.textureWidth ti) (fromIntegral $ SDL.textureHeight ti))
-    )
-  SDL.destroyTexture text
+  if tb ^. textPart <= 0
+    then pure ()
+    else do
+      loc <- case tb ^. avatar of
+        Nothing -> pure (fmap (+20) $ tb ^. pos)
+        Just av -> do
+          SDL.copy
+            renderer
+            av
+            Nothing
+            (Just $ toRect
+              (fmap (+20) $ tb ^. pos)
+              (Point 96 96)
+            )
+          pure (Point (20 + tb ^. pos . x + 96 + 20) (tb ^. pos . y + 20))
+
+      text <- SDL.createTextureFromSurface renderer
+        =<< SDLF.solid (tb ^. font) (Linear.V4 255 255 255 255) (T.take (tb ^. textPart) (tb ^. text))
+      ti <- SDL.queryTexture text
+      SDL.copy
+        renderer
+        text
+        Nothing
+        (Just $ toRect
+          loc
+          (Point (fromIntegral $ SDL.textureWidth ti) (fromIntegral $ SDL.textureHeight ti))
+        )
+      SDL.destroyTexture text

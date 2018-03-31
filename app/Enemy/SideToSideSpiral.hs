@@ -32,19 +32,18 @@ wantedAssets =
 
 make :: IPoint -> [(String, SDL.Texture)] -> Result Enemy
 make posi ts = do
-  let textName = "moon"
-  case lookup textName ts of
+  case (,) <$> lookup "saito2" ts <*> lookup "chikua" ts of
     Nothing ->
-      throwError ["Texture not found: " ++ textName]
-    Just txt ->
+      throwError ["Texture not found: saito2 or chikua" ]
+    Just (et, bt) ->
       pure . mkEnemy $
         MakeEnemy
           { mkePos = posi
           , mkeMov = leftRightMovement
           , mkeHealth = 100
           , mkeDirChanger = changeDirection
-          , mkeAtk = singleSpiralAttack txt
-          , mkeEnemyTxt = txt
+          , mkeAtk = singleSpiralAttack bt
+          , mkeEnemyTxt = et
           }
 
 leftRightMovement :: MV.Movement

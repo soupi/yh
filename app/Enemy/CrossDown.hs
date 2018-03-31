@@ -27,23 +27,24 @@ import qualified Play.Engine.Movement as MV
 wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
   [ ("moon", MySDL.Texture "assets/imgs/moon2.png")
+  , ("chikua", MySDL.Texture "assets/imgs/chikua.png")
   ]
 
 make :: IPoint -> Either () () -> [(String, SDL.Texture)] -> Result Enemy
 make posi dir ts = do
   let textName = "moon"
-  case lookup textName ts of
+  case (,) <$> lookup textName ts <*> lookup "chikua" ts of
     Nothing ->
-      throwError ["Texture not found: " ++ textName]
-    Just txt ->
+      throwError ["Texture not found: chikua or " ++ textName]
+    Just (bt, et) ->
       pure . mkEnemy $
         MakeEnemy
           { mkePos = posi
           , mkeMov = crossMovement dir
           , mkeHealth = 100
           , mkeDirChanger = changeDirection
-          , mkeAtk = downAttack txt
-          , mkeEnemyTxt = txt
+          , mkeAtk = downAttack bt
+          , mkeEnemyTxt = et
           }
 
 crossMovement :: Either () () -> MV.Movement
