@@ -4,6 +4,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
 {-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE OverloadedStrings  #-}
 
 module TextBox where
 
@@ -36,10 +37,14 @@ data Loc
 data TextBox
   = TextBox
   { _avatar :: Maybe SDL.Texture
-  , _text :: SDL.Texture
+  , _font :: SDLF.Font
+  , _text :: T.Text
   , _posY :: !Loc
   , _pos :: {-# UNPACK #-} !IPoint
   , _size :: {-# UNPACK #-} !IPoint
+  , _textPart :: Int
+  , _textSpeed :: Int
+  , _textTimer :: Int
   }
 
 makeFieldsNoPrefix ''TextBox
@@ -49,14 +54,20 @@ wantedAssets =
   [ ("unispace", MySDL.Font "assets/fonts/unispace/unispace.ttf")
   ]
 
-make :: Loc -> Maybe SDL.Texture -> SDL.Texture -> TextBox
-make py mavatar txt =
-  TextBox
+make :: Loc -> Int -> T.Text -> Maybe SDL.Texture -> Maybe SDLF.Font -> Result TextBox
+make _ _ _ _ Nothing =
+  throwError ["A font was not provided to TextBox."]
+make py spd txt mavatar (Just fnt) =
+  pure $ TextBox
     { _avatar = mavatar
+    , _font = fnt
     , _text = txt
     , _posY = py
     , _pos = Point 0 0
     , _size = Point 0 0
+    , _textPart = 0
+    , _textSpeed = spd
+    , _textTimer = spd
     }
 
 update :: Input -> TextBox -> Result (Maybe TextBox)
@@ -75,19 +86,27 @@ update input tb
 
 
 render :: SDL.Renderer -> TextBox -> IO ()
-render renderer tb = do
+render renderer tb
+  | tb ^. size == Point 0 0 =
+    pure ()
+  | otherwise = do
   let
     rect = toRect (tb ^. pos) (tb ^. size)
+
   SDL.rendererDrawColor renderer SDL.$= Linear.V4 0 0 0 150
   SDL.fillRect renderer (Just rect)
   SDL.rendererDrawColor renderer SDL.$= Linear.V4 100 130 180 200
   SDL.drawRect renderer (Just rect)
-  ti <- SDL.queryTexture (tb ^. text)
+
+  text <- SDL.createTextureFromSurface renderer
+    =<< SDLF.solid (tb ^. font) (Linear.V4 255 255 255 255) (tb ^. text)
+  ti <- SDL.queryTexture text
   SDL.copy
     renderer
-    (tb ^. text)
+    text
     Nothing
     (Just $ toRect
       (fmap (+20) $ tb ^. pos)
       (Point (fromIntegral $ SDL.textureWidth ti) (fromIntegral $ SDL.textureHeight ti))
     )
+  SDL.destroyTexture text

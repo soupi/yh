@@ -56,21 +56,22 @@ wantedAssets =
   [ ("bg", MySDL.Texture "assets/imgs/bg.png")
   ]
   ++ SB.wantedAssets
-  ++ SSE.wantedAssets
 
-mkGameState :: State.State
-mkGameState = Load.mkState wantedAssets mkState
+mkGameState :: Script.ScriptData -> State.State
+mkGameState sd = Load.mkState (wantedAssets ++ Script.assets sd) (mkState $ Script.script sd)
 
-mkState :: [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State.State
-mkState texts fonts = do
-  state <- initState texts fonts
-  pure $ State.State $ State.StateF
+mkState
+  :: ([(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Script.Script)
+  -> [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State.State
+mkState scrpt texts fonts = do
+  state <- initState (scrpt texts fonts) texts fonts
+  pure $ State.mkState
     state
     update
     render
 
-initState :: [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State
-initState ts fs = do
+initState :: Script.Script -> [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State
+initState scrpt ts fs = do
   case lookup "bg" ts of
     Nothing ->
       throwError ["Texture not found: bg"]
@@ -84,15 +85,15 @@ initState ts fs = do
         (DL.fromList [])
         ts
         fs
-        (L1.level1 ts)
+        scrpt
 
 initEnemyTimer = 60
 
-update :: Input -> State -> Result ([MySDL.Request], (State.Command, State))
+update :: Input -> State -> Result (State.Command, State)
 update input state = do
   wSize <- _windowSize <$> SM.get
 
-  (reqs, (acts, script')) <- Script.update input (state ^. mc . pos) (state ^. enemies) (state ^. script)
+  (acts, script') <- Script.update input (state ^. mc . pos) (state ^. enemies) (state ^. script)
 
   (mc', addMCBullets) <-
     SB.update
@@ -129,12 +130,11 @@ update input state = do
   -- state stack manipulation
   if
     | keyReleased KeyC input -> do
-      next <- mkState (state ^. textures) (state ^. fonts)
-      pure ([], (State.Push next, state))
+      pure (State.Push $ mkGameState L1.level1, state)
     | keyReleased KeyD input ->
-      pure ([], (State.Done, state))
+      pure (State.Done, state)
     | otherwise ->
-      pure (reqs, (State.None, newState))
+      pure (State.None, newState)
 
 flipEnemyDir :: Either () () -> Either () ()
 flipEnemyDir = \case
