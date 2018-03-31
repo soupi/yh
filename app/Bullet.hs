@@ -17,7 +17,7 @@ import Play.Engine.Types
 import Control.Lens
 import Control.DeepSeq
 import qualified Data.Map as M
-import qualified Movement as MV
+import qualified Play.Engine.Movement as MV
 
 import Debug.Trace
 

@@ -51,7 +51,7 @@ makeFieldsNoPrefix ''State
 
 wantedAssets :: [(String, FilePath)]
 wantedAssets =
-  [ ("bg", "assets/bg.png")
+  [ ("bg", "assets/imgs/bg.png")
   ]
   ++ SB.wantedAssets
   ++ SSE.wantedAssets
@@ -88,7 +88,14 @@ initEnemyTimer = 60
 update :: Input -> State -> Result (State.Command, State)
 update input state = do
   wSize <- _windowSize <$> SM.get
-  (mc', addMCBullets) <- SB.update input (state ^. mc)
+
+  (acts, script') <- Script.update input (state ^. mc . pos) (state ^. enemies) (state ^. script)
+
+  (mc', addMCBullets) <-
+    SB.update
+      (maybe input (dirToInput . dirToPlace (state ^. mc . pos)) (Script.moveMC acts))
+      (state ^. mc)
+
   (enemies', addEnemiesBullets) <-
     bimap mconcat (foldr (.) id) . unzip <$> traverse (Enemy.update input) (state ^. enemies)
   let
@@ -98,14 +105,12 @@ update input state = do
     (enemyBullets', mcHit) =
       updateListWith M.empty (const $ const M.empty) (Bullet.update wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
 
-  (newEnemies, script') <- Script.update (state ^. enemies) (state ^. script)
-
   let
     newState =
       state
         & set mc (SB.checkHit enemyBullets' mc')
         & set enemies enemies'
-        & over enemies ((++) newEnemies . map (Enemy.checkHit mcBullets'))
+        & over enemies ((++) (Script.spawn acts) . map (Enemy.checkHit mcBullets'))
         & set mcBullets mcBullets'
         & set enemyBullets enemyBullets'
         & over bg SBG.updateSBG
@@ -133,3 +138,11 @@ render renderer state = do
   traverse (Enemy.render renderer) (state ^. enemies)
   forM_ (state ^. mcBullets) (Bullet.render renderer)
   forM_ (state ^. enemyBullets) (Bullet.render renderer)
+
+dirToInput :: IPoint -> Input
+dirToInput dir =
+  Input ks []
+  where
+    ks = M.fromList $ map (,Click)
+      $  (if dir ^. x > 0 then [KeyRight] else if dir ^. x < 0 then [KeyLeft] else [])
+      ++ (if dir ^. y > 0 then [KeyUp]    else if dir ^. y < 0 then [KeyDown] else [])

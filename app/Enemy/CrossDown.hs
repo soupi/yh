@@ -21,12 +21,12 @@ import Bullet
 import Enemy
 import qualified Attack as A
 import qualified Attack.SpiralAttack as SA
-import qualified Movement as MV
+import qualified Play.Engine.Movement as MV
 
 
 wantedAssets :: [(String, FilePath)]
 wantedAssets =
-  [ ("moon", "assets/moon2.png")
+  [ ("moon", "assets/imgs/moon2.png")
   ]
 
 make :: IPoint -> Either () () -> [(String, SDL.Texture)] -> Result Enemy

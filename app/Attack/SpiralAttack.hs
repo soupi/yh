@@ -17,7 +17,7 @@ import qualified Data.DList as DL
 import Bullet
 import Attack
 import qualified Attack
-import qualified Movement as MV
+import qualified Play.Engine.Movement as MV
 
 
 make :: Int -> Int -> (Int, Float) -> FPoint -> SDL.Texture -> Attack

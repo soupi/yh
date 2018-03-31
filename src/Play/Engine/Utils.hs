@@ -24,6 +24,8 @@ import qualified Data.DList as DL
 
 import Play.Engine.Types
 
+import Debug.Trace
+
 
 -- |
 -- replicate operation and chain it
@@ -131,6 +133,29 @@ fixPos wsize entity =
   in
     set pos (Point x' y') entity
 
+isInWindow :: Size -> IPoint -> Size -> Bool
+isInWindow = isInSquare (Point 0 0)
+
+isInSquare :: IPoint -> Size -> IPoint -> Size -> Bool
+isInSquare wpos wsize pos sz
+  |  pos ^. x + sz ^. x < (wpos ^. x) || pos ^. x > wpos ^.x + wsize ^. x
+  || pos ^. y + sz ^. y < (wpos ^. y) || pos ^. y > wpos ^.y + wsize ^. y
+  = False
+
+  | otherwise = True
+
+isAround :: IPoint -> IPoint -> Size -> Bool
+isAround place pos size =
+  isInSquare (place `addPoint` Point (-5) (-5)) size pos size
+
+dirToPlace :: IPoint -> IPoint -> IPoint
+dirToPlace pos place =
+  Point (dir x) (negate $ dir y)
+  where
+    dir c
+      | place ^. c > pos ^. c = 1
+      | place ^. c < pos ^. c = -1
+      | otherwise = 0
 
 -----------
 -- Stack --
@@ -155,11 +180,3 @@ pop = \case
 replace :: a -> Stack a -> Stack a
 replace x = \case
   Stack _ xs -> Stack (x `seq` x) xs
-
-isInWindow :: Size -> IPoint -> Size -> Bool
-isInWindow wsize pos sz
-  | pos ^. y + sz ^. y < 0 || pos ^. y > wsize ^. y
-  || pos ^. x + sz ^. x < 0 || pos ^. x > wsize ^. x
-  = False
-
-  | otherwise = True

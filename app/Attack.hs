@@ -14,7 +14,7 @@ import Control.Lens
 import qualified Data.DList as DL
 
 import Bullet
-import qualified Movement as MV
+import qualified Play.Engine.Movement as MV
 
 
 data Attack

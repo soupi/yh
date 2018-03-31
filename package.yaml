@@ -21,13 +21,14 @@ dependencies:
 - vector
 - lens
 - bytestring
-- sdl2
-- sdl2-gfx
-- sdl2-image
 - linear
 - deepseq
 - stm
 - async
+- sdl2
+- sdl2-gfx
+- sdl2-image
+- sdl2-ttf
 
 library:
   source-dirs: src

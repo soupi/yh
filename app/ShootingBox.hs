@@ -22,7 +22,7 @@ import qualified Control.Monad.State as SM
 import qualified Linear
 import qualified Data.DList as DL
 
-import qualified Movement as MV
+import qualified Play.Engine.Movement as MV
 import Bullet
 
 
@@ -62,7 +62,7 @@ instance Ord MainChar where
 
 wantedAssets :: [(String, FilePath)]
 wantedAssets =
-  [ ("rin", "assets/rin.png")
+  [ ("rin", "assets/imgs/rin.png")
   ]
 
 mkMainChar :: [(String, SDL.Texture)] -> Result MainChar
@@ -79,7 +79,7 @@ mkMainChar ts = do
           , _hitTimer = -1
           , _bulletsTimer = 5
           , _health = 1
-          , _movement = MV.make (Point 4 4) (Point 6 6)
+          , _movement = MV.make (Point 3.5 3.5) (Point 5 5)
           }
 
 charSize :: Size

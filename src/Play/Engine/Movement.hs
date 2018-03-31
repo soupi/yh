@@ -9,7 +9,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE BangPatterns #-}
 
-module Movement where
+module Play.Engine.Movement where
 
 import qualified SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL
