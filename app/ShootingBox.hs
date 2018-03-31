@@ -60,10 +60,11 @@ instance Ord MainChar where
     mc1 ^. pos <= mc2 ^. pos
     && mc1 ^. size <= mc2 ^. size
 
-wantedAssets :: [(String, FilePath)]
+wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
-  [ ("rin", "assets/imgs/rin.png")
+  [ ("rin", MySDL.Texture "assets/imgs/rin.png")
   ]
+
 
 mkMainChar :: [(String, SDL.Texture)] -> Result MainChar
 mkMainChar ts = do

@@ -8,6 +8,7 @@
 module GameState where
 
 import qualified SDL
+import qualified SDL.Font as SDLF
 import qualified Play.Engine.MySDL.MySDL as MySDL
 
 import Play.Engine.Utils
@@ -44,14 +45,15 @@ data State
   , _mcBullets :: DL.DList Bullet
   , _enemyBullets :: DL.DList Bullet
   , _textures :: [(String, SDL.Texture)]
+  , _fonts :: [(String, SDLF.Font)]
   , _script :: Script.Script
   }
 
 makeFieldsNoPrefix ''State
 
-wantedAssets :: [(String, FilePath)]
+wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
-  [ ("bg", "assets/imgs/bg.png")
+  [ ("bg", MySDL.Texture "assets/imgs/bg.png")
   ]
   ++ SB.wantedAssets
   ++ SSE.wantedAssets
@@ -59,16 +61,16 @@ wantedAssets =
 mkGameState :: State.State
 mkGameState = LT.mkState wantedAssets mkState
 
-mkState :: [(String, SDL.Texture)] -> Result State.State
-mkState texts = do
-  state <- initState texts
+mkState :: [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State.State
+mkState texts fonts = do
+  state <- initState texts fonts
   pure $ State.mkState
     state
     update
     render
 
-initState :: [(String, SDL.Texture)] -> Result State
-initState ts = do
+initState :: [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State
+initState ts fs = do
   case lookup "bg" ts of
     Nothing ->
       throwError ["Texture not found: bg"]
@@ -81,6 +83,7 @@ initState ts = do
         (DL.fromList [])
         (DL.fromList [])
         ts
+        fs
         (L1.level1 ts)
 
 initEnemyTimer = 60
@@ -107,19 +110,26 @@ update input state = do
 
   let
     newState =
-      state
-        & set mc (SB.checkHit enemyBullets' mc')
-        & set enemies enemies'
-        & over enemies ((++) (Script.spawn acts) . map (Enemy.checkHit mcBullets'))
+      state'
+        & set script script'
         & set mcBullets mcBullets'
         & set enemyBullets enemyBullets'
         & over bg SBG.updateSBG
-        & set script script'
+      where
+        state' =
+          if Script.stopTheWorld acts
+            then
+              state
+            else
+              state
+                & set mc (SB.checkHit enemyBullets' mc')
+                & set enemies enemies'
+                & over enemies ((++) (Script.spawn acts) . map (Enemy.checkHit mcBullets'))
 
   -- state stack manipulation
   if
     | keyReleased KeyC input -> do
-      next <- mkState (state ^. textures)
+      next <- mkState (state ^. textures) (state ^. fonts)
       pure (State.Push next, state)
     | keyReleased KeyD input ->
       pure (State.Done, state)
@@ -146,3 +156,4 @@ dirToInput dir =
     ks = M.fromList $ map (,Click)
       $  (if dir ^. x > 0 then [KeyRight] else if dir ^. x < 0 then [KeyLeft] else [])
       ++ (if dir ^. y > 0 then [KeyUp]    else if dir ^. y < 0 then [KeyDown] else [])
+

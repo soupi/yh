@@ -3,6 +3,7 @@
 module Play.Engine.LoadTextures where
 
 import qualified SDL
+import qualified SDL.Font as SDLF
 import qualified SDL.Image as SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL
 
@@ -25,16 +26,23 @@ import Control.Concurrent.Async
 data State
   = State
   { _timer :: Int
-  , _filepaths :: [(String, FilePath)]
-  , _nextState :: [(String, SDL.Texture)] -> Result State.State
+  , _filepaths :: [(String, MySDL.ResourceType FilePath)]
+  , _nextState :: [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State.State
   }
 
 makeLenses ''State
 
-mkState :: [(String, FilePath)] -> ([(String, SDL.Texture)] -> Result State.State) -> State.State
-mkState files next = State.State $ State.StateF (initState files next) update render
+mkState
+  :: [(String, MySDL.ResourceType FilePath)]
+  -> ([(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State.State)
+  -> State.State
+mkState files next =
+  State.State $ State.StateF (initState files next) update render
 
-initState :: [(String, FilePath)] -> ([(String, SDL.Texture)] -> Result State.State) -> State
+initState
+  :: [(String, MySDL.ResourceType FilePath)]
+  -> ([(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State.State)
+  -> State
 initState = State 90
 
 update :: Input -> State -> Result ([MySDL.Request], (State.Command, State))
@@ -44,11 +52,11 @@ update input s@(State timer files next) =
   case (files, responses input) of
     ([], []) -> pure ([], (State.None, s))
     ([], [MySDL.Exception e]) -> throwError [e]
-    ([], [MySDL.TexturesLoaded textures]) -> do
-      next' <- next textures
+    ([], [MySDL.ResourcesLoaded textures fonts]) -> do
+      next' <- next textures fonts
       pure ([], (State.Replace next', s))
     ([], rs) -> throwError ["Unexpected number of responses: " ++ show (length rs)]
-    (files, _) -> pure ([MySDL.LoadTextures files], (State.None, set filepaths [] s))
+    (files, _) -> pure ([MySDL.Load files], (State.None, set filepaths [] s))
 
 render :: SDL.Renderer -> State -> IO ()
 render renderer state =

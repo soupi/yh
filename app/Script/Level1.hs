@@ -1,6 +1,7 @@
 module Script.Level1 where
 
 import qualified SDL
+import qualified Play.Engine.MySDL.MySDL as MySDL
 
 import Script
 import Play.Engine.Types
@@ -8,7 +9,7 @@ import qualified Enemy.CrossDown as CDE
 import qualified Enemy.SideToSideSpiral as SSE
 import Debug.Trace
 
-wantedAssets :: [(String, FilePath)]
+wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
   CDE.wantedAssets
   ++ SSE.wantedAssets
@@ -25,6 +26,7 @@ level1 ts =
   , spawnTwoCDEs (Right ()) (Left ()) ts
   , WaitUntil noAction (const $ null)
   , Wait noAction 200
+  , Wait act{ stopTheWorld = True} 30
   , goToLoc $ Point 380 800
   , Spawn $ sequence [SSE.make (Point 350 (-100)) ts]
   ]

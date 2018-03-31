@@ -24,9 +24,9 @@ import qualified Attack.SpiralAttack as SA
 import qualified Play.Engine.Movement as MV
 
 
-wantedAssets :: [(String, FilePath)]
+wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
-  [ ("moon", "assets/imgs/moon2.png")
+  [ ("moon", MySDL.Texture "assets/imgs/moon2.png")
   ]
 
 make :: IPoint -> Either () () -> [(String, SDL.Texture)] -> Result Enemy

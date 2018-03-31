@@ -5,6 +5,7 @@
 module Play.Engine.MySDL.MySDL where
 
 import Data.Maybe
+import Data.Either
 import Data.Word (Word8)
 import Data.Text (Text)
 import Control.Exception
@@ -106,13 +107,19 @@ collectEvents = SDL.pollEvent >>= \case
 checkEvent :: SDL.EventPayload -> [SDL.EventPayload] -> Bool
 checkEvent = elem
 
+data Resource
+  = RTexture SDL.Texture
+  | RFont SDLF.Font
+
+data ResourceType a
+  = Texture a
+  | Font a
 
 data Request
-  = LoadTextures ![(String, FilePath)]
-  | LoadFonts ![(String, FilePath)]
+  = Load ![(String, ResourceType FilePath)]
 
 data Response
-  = TexturesLoaded ![(String, SDL.Texture)]
+  = ResourcesLoaded ![(String, SDL.Texture)] ![(String, SDLF.Font)]
   | Exception String
 
 data Resources
@@ -129,23 +136,46 @@ initResources =
 
 runRequest :: Resources -> TQueue Response -> SDL.Renderer -> Request -> IO ()
 runRequest resources queue renderer = \case
-  LoadTextures files -> flip catch (\(SomeException e) -> atomically $ writeTQueue queue $ Exception $ show e) $ do
+  Load files -> flip catch (\(SomeException e) -> atomically $ writeTQueue queue $ Exception $ show e) $ do
     results <-
       mapConcurrently
-        (\(n, f) -> do
-          mTxt <- atomically $ do
-            txts <- readTVar (textures resources)
-            pure $ M.lookup f txts
-          (n,) <$> case mTxt of
-            Just txt ->
-              pure txt
-            Nothing -> do
-              txt <- SDLI.loadTexture renderer f
-              atomically $ do
-                txts' <- readTVar (textures resources)
-                writeTVar (textures resources) (M.insert f txt txts')
-              pure txt
-        )
+        (loadResource renderer resources)
         files
-    atomically $ writeTQueue queue (TexturesLoaded results)
+    atomically $ writeTQueue queue (resourcesToResponse results)
 
+loadResource renderer resources (n, r) =
+  case r of
+    Texture f -> do
+      mTxt <- atomically $ do
+        txts <- readTVar (textures resources)
+        pure $ M.lookup f txts
+      (n,) . RTexture <$> case mTxt of
+        Just txt ->
+          pure txt
+        Nothing -> do
+          txt <- SDLI.loadTexture renderer f
+          atomically $ do
+            txts' <- readTVar (textures resources)
+            writeTVar (textures resources) (M.insert f txt txts')
+          pure txt
+    Font f -> do
+      mFont <- atomically $ do
+        fnts <- readTVar (fonts resources)
+        pure $ M.lookup f fnts
+      (n,) . RFont <$> case mFont of
+        Just fnt ->
+          pure fnt
+        Nothing -> do
+          fnt <- SDLF.load f 18
+          atomically $ do
+            fnts' <- readTVar (fonts resources)
+            writeTVar (fonts resources) (M.insert f fnt fnts')
+          pure fnt
+
+resourcesToResponse :: [(String, Resource)] -> Response
+resourcesToResponse rs =
+  uncurry ResourcesLoaded . partitionEithers . map f $ rs
+  where
+    f = \case
+      (n, RTexture t) -> Left (n, t)
+      (n, RFont f) -> Right (n, f)
