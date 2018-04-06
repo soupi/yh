@@ -10,6 +10,7 @@ module Enemy.SideToSideSpiral where
 import qualified SDL
 import qualified SDL.Primitive as SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL
+import qualified Data.Map as M
 import Control.Monad.Except
 import Control.Lens
 
@@ -30,9 +31,9 @@ wantedAssets =
   ]
 
 
-make :: IPoint -> [(String, SDL.Texture)] -> Result Enemy
+make :: IPoint -> M.Map String SDL.Texture -> Result Enemy
 make posi ts = do
-  case (,) <$> lookup "saito2" ts <*> lookup "chikua" ts of
+  case (,) <$> M.lookup "saito2" ts <*> M.lookup "chikua" ts of
     Nothing ->
       throwError ["Texture not found: saito2 or chikua" ]
     Just (et, bt) ->

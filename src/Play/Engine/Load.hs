@@ -27,21 +27,21 @@ data State
   = State
   { _timer :: Int
   , _filepaths :: [(String, MySDL.ResourceType FilePath)]
-  , _nextState :: [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State.State
+  , _nextState :: MySDL.Resources -> Result State.State
   }
 
 makeLenses ''State
 
 mkState
   :: [(String, MySDL.ResourceType FilePath)]
-  -> ([(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State.State)
+  -> (MySDL.Resources -> Result State.State)
   -> State.State
 mkState files next =
   State.State $ State.StateF (initState files next) update render
 
 initState
   :: [(String, MySDL.ResourceType FilePath)]
-  -> ([(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State.State)
+  -> (MySDL.Resources -> Result State.State)
   -> State
 initState = State 90
 
@@ -52,8 +52,8 @@ update input s@(State timer files next) =
   case (files, responses input) of
     ([], []) -> pure ([], (State.None, s))
     ([], [MySDL.Exception e]) -> throwError [e]
-    ([], [MySDL.ResourcesLoaded textures fonts]) -> do
-      next' <- next textures fonts
+    ([], [MySDL.ResourcesLoaded resources]) -> do
+      next' <- next resources
       pure ([], (State.Replace next', s))
     ([], rs) -> throwError ["Unexpected number of responses: " ++ show (length rs)]
     (files, _) -> pure ([MySDL.Load files], (State.None, set filepaths [] s))

@@ -24,7 +24,7 @@ data Command
 data ScriptData
   = Script
   { assets :: [(String, MySDL.ResourceType FilePath)]
-  , script :: [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Script
+  , script :: MySDL.Resources -> Script
   }
 
 type Script = [Command]
@@ -75,8 +75,8 @@ goToLoc p =
     (act { moveMC = Just p })
     (\mcPos _ -> isAround p mcPos (Point 20 20))
 
-render :: SDL.Renderer -> Script -> IO ()
-render renderer =
+render :: SDL.Renderer -> Camera -> Script -> IO ()
+render renderer cam =
   maybe (pure ()) f . listToMaybe
   where
     f = \case

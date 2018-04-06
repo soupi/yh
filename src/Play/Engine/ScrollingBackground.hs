@@ -61,7 +61,7 @@ updateSBG sbg =
       & over (sbg1 . pos . y) (flip (-) (sbg' ^. speed))
       & over (sbg2 . pos . y) (flip (-) (sbg' ^. speed))
 
-render :: SDL.Renderer -> SBG -> IO ()
-render renderer sbg = do
-  SDL.copy renderer (sbg ^. texture) Nothing (Just $ toRect (sbg ^. sbg1 . pos) (sbg ^. size))
-  SDL.copy renderer (sbg ^. texture) Nothing (Just $ toRect (sbg ^. sbg2 . pos) (sbg ^. size))
+render :: SDL.Renderer -> Camera -> SBG -> IO ()
+render renderer cam sbg = do
+  SDL.copy renderer (sbg ^. texture) Nothing (Just $ toRect (cam $ sbg ^. sbg1 . pos) (sbg ^. size))
+  SDL.copy renderer (sbg ^. texture) Nothing (Just $ toRect (cam $ sbg ^. sbg2 . pos) (sbg ^. size))

@@ -19,6 +19,7 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.Except
 import Control.Lens
+import System.Random
 import qualified Play.Engine.State as State
 import qualified Play.Engine.Load as Load
 import qualified Control.Monad.State as SM
@@ -44,9 +45,9 @@ data State
   , _enemies :: [Enemy.Enemy]
   , _mcBullets :: DL.DList Bullet
   , _enemyBullets :: DL.DList Bullet
-  , _textures :: [(String, SDL.Texture)]
-  , _fonts :: [(String, SDLF.Font)]
+  , _resources :: MySDL.Resources
   , _script :: Script.Script
+  , _camera :: Int
   }
 
 makeFieldsNoPrefix ''State
@@ -61,31 +62,31 @@ mkGameState :: Script.ScriptData -> State.State
 mkGameState sd = Load.mkState (wantedAssets ++ Script.assets sd) (mkState $ Script.script sd)
 
 mkState
-  :: ([(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Script.Script)
-  -> [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State.State
-mkState scrpt texts fonts = do
-  state <- initState (scrpt texts fonts) texts fonts
+  :: (MySDL.Resources -> Script.Script)
+  -> MySDL.Resources -> Result State.State
+mkState scrpt rs = do
+  state <- initState (scrpt rs) rs
   pure $ State.mkState
     state
     update
     render
 
-initState :: Script.Script -> [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Result State
-initState scrpt ts fs = do
-  case lookup "bg" ts of
+initState :: Script.Script -> MySDL.Resources -> Result State
+initState scrpt rs = do
+  case M.lookup "bg" (MySDL.textures rs) of
     Nothing ->
       throwError ["Texture not found: bg"]
     Just bgt -> do
-      mc' <- (SB.mkMainChar ts)
+      mc' <- (SB.mkMainChar $ MySDL.textures rs)
       pure $ State
         (SBG.mkSBG bgt 1 (Point 800 1000) (Point 0 0))
         mc'
         []
         (DL.fromList [])
         (DL.fromList [])
-        ts
-        fs
+        rs
         scrpt
+        0
 
 initEnemyTimer = 60
 
@@ -107,7 +108,7 @@ update input state = do
       updateListWith M.empty (const $ const M.empty) (Bullet.update wSize (state ^. enemies)) . addMCBullets $ state ^. mcBullets
 
     (enemyBullets', mcHit) =
-      updateListWith M.empty (const $ const M.empty) (Bullet.update wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
+      updateListWith M.empty (M.union) (Bullet.update wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
 
   let
     newState =
@@ -143,12 +144,14 @@ flipEnemyDir = \case
 
 render :: SDL.Renderer -> State -> IO ()
 render renderer state = do
-  SBG.render renderer (state ^. bg)
-  SB.render renderer (state ^. mc)
-  traverse (Enemy.render renderer) (state ^. enemies)
-  forM_ (state ^. mcBullets) (Bullet.render renderer)
-  forM_ (state ^. enemyBullets) (Bullet.render renderer)
-  Script.render renderer (state ^. script)
+  cam' <- Point <$> randomRIO (-1, 1) <*> randomRIO (-1, 1) :: IO FPoint
+  let cam = addPoint $ fmap (floor . (*) (fromIntegral $ state ^. camera)) cam'
+  SBG.render renderer cam (state ^. bg)
+  SB.render renderer cam (state ^. mc)
+  traverse (Enemy.render renderer cam) (state ^. enemies)
+  forM_ (state ^. mcBullets) (Bullet.render renderer cam)
+  forM_ (state ^. enemyBullets) (Bullet.render renderer cam)
+  Script.render renderer cam (state ^. script)
 
 dirToInput :: IPoint -> Input
 dirToInput dir =

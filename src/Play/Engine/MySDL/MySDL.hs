@@ -1,6 +1,6 @@
 -- MySDL: some wrappers and utility functions around SDL
 
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, TypeFamilies #-}
 
 module Play.Engine.MySDL.MySDL where
 
@@ -10,6 +10,7 @@ import Data.Word (Word8)
 import Data.Text (Text)
 import Control.Exception
 import Control.Monad (when)
+import Control.Monad.Identity
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import System.IO
 import Control.Concurrent
@@ -66,7 +67,7 @@ withRenderer window go = do
 -- | App loop: takes the current world and functions that updates the world renders it
 -- manage ticks, events and loop
 apploop
-  :: Resources
+  :: ResourcesT TVar
   -> TQueue Response
   -> SDL.Renderer
   -> a
@@ -117,23 +118,29 @@ data Request
   | MakeText (String, FilePath) T.Text
 
 data Response
-  = ResourcesLoaded ![(String, SDL.Texture)] ![(String, SDLF.Font)]
+  = ResourcesLoaded Resources
   | NewText SDL.Texture
   | Exception String
 
-data Resources
+data ResourcesT f
   = Resources
-  { textures :: TVar (M.Map FilePath SDL.Texture)
-  , fonts :: TVar (M.Map FilePath SDLF.Font)
+  { textures :: HKD f (M.Map FilePath SDL.Texture)
+  , fonts :: HKD f (M.Map FilePath SDLF.Font)
   }
 
-initResources :: IO Resources
+type family HKD f a where
+  HKD Identity a = a
+  HKD f        a = f a
+
+type Resources = ResourcesT Identity
+
+initResources :: IO (ResourcesT TVar)
 initResources =
   Resources
     <$> newTVarIO M.empty
     <*> newTVarIO M.empty
 
-runRequest :: Resources -> TQueue Response -> SDL.Renderer -> Request -> IO ()
+runRequest :: ResourcesT TVar -> TQueue Response -> SDL.Renderer -> Request -> IO ()
 runRequest resources queue renderer req =
   flip catch (\(SomeException e) -> atomically $ writeTQueue queue $ Exception $ show e) $
     case req of
@@ -181,8 +188,9 @@ loadResource renderer resources (n, r) =
 
 resourcesToResponse :: [(String, Resource)] -> Response
 resourcesToResponse rs =
-  uncurry ResourcesLoaded . partitionEithers . map f $ rs
+  ResourcesLoaded . foldr (flip f) initS $ rs
   where
-    f = \case
-      (n, RTexture t) -> Left (n, t)
-      (n, RFont f) -> Right (n, f)
+    initS = Resources M.empty M.empty
+    f s = \case
+      (n, RTexture t) -> s { textures = M.insert n t (textures s) }
+      (n, RFont f) -> s { fonts = M.insert n f (fonts s) }

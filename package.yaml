@@ -23,6 +23,7 @@ dependencies:
 - bytestring
 - linear
 - deepseq
+- random
 - stm
 - async
 - sdl2

@@ -11,6 +11,7 @@ import Play.Engine.Types
 import qualified Enemy.CrossDown as CDE
 import qualified Enemy.SideToSideSpiral as SSE
 import qualified TextBox as TB
+import qualified Data.Map as M
 import Debug.Trace
 
 
@@ -31,16 +32,16 @@ wantedAssets =
      ]
 
 
-lScript :: [(String, SDL.Texture)] -> [(String, SDLF.Font)] -> Script
-lScript ts fs =
+lScript :: MySDL.Resources -> Script
+lScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs } =
   [ LoadTextBox act{ stopTheWorld = True } $
-    TB.make TB.Up 6 "..." Nothing (lookup "unispace" fs)
+    TB.make TB.Up 6 "..." Nothing (M.lookup "unispace" fs)
 
   , LoadTextBox act{ stopTheWorld = True } $
-    TB.make TB.Up 5 "I sent assassins to your campsite." (lookup "saito" ts) (lookup "unispace" fs)
+    TB.make TB.Up 5 "I sent assassins to your campsite." (M.lookup "saito" ts) (M.lookup "unispace" fs)
 
   , LoadTextBox act{ stopTheWorld = True } $
-    TB.make TB.Down 3 "!!!" (lookup "rin" ts) (lookup "unispace" fs)
+    TB.make TB.Down 3 "!!!" (M.lookup "rin" ts) (M.lookup "unispace" fs)
 
   , Wait noAction 60
 
@@ -62,7 +63,7 @@ lScript ts fs =
   , Wait noAction 100
 
   , LoadTextBox act{ stopTheWorld = True } $
-    TB.make TB.Up 5 "orz" (lookup "saito" ts) (lookup "unispace" fs)
+    TB.make TB.Up 5 "orz" (M.lookup "saito" ts) (M.lookup "unispace" fs)
   ]
 
 spawnTwoCDEs dir1 dir2 ts =

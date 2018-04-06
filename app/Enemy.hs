@@ -157,10 +157,10 @@ checkHit bullets enemy
 
 hitTimeout = 20
 
-render :: SDL.Renderer -> Enemy -> IO ()
-render renderer enemy = do
+render :: SDL.Renderer -> Camera -> Enemy -> IO ()
+render renderer cam enemy = do
   let
-    rect = toRect (enemy ^. pos) (enemy ^. size)
+    rect = toRect (cam $ enemy ^. pos) (enemy ^. size)
     h = fromIntegral $ 255 - max 0 (enemy ^. health * 2)
   if enemy ^. timers . hitTimer > 0 && enemy ^. timers . hitTimer `mod` 6 < 3
   then do
@@ -169,8 +169,8 @@ render renderer enemy = do
       radius = fromIntegral $ enemy ^. size . x `div` 2
       center =
         Linear.V2
-          (fromIntegral (enemy ^. pos . x) + radius)
-          (fromIntegral (enemy ^. pos . y) + radius)
+          (fromIntegral (cam (enemy ^. pos) ^. x) + radius)
+          (fromIntegral (cam (enemy ^. pos) ^. y) + radius)
     SDL.circle renderer center radius colour
     SDL.fillCircle renderer center radius colour
   else

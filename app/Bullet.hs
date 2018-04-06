@@ -83,8 +83,8 @@ update wsize entities b =
 fromListConcat :: Ord k => [(k, a)] -> M.Map k [a]
 fromListConcat = foldr (uncurry $ M.insertWith (++)) M.empty . map (fmap (:[]))
 
-render :: SDL.Renderer -> Bullet -> IO ()
-render renderer bullet = do
+render :: SDL.Renderer -> Camera -> Bullet -> IO ()
+render renderer cam bullet = do
   SDL.textureBlendMode (bullet ^. texture) SDL.$= SDL.BlendAlphaBlend
   SDL.textureAlphaMod  (bullet ^. texture) SDL.$= (bullet ^. transparency)
-  SDL.copy renderer (bullet ^. texture) Nothing (Just $ toRect (bullet ^. pos) (bullet ^. size))
+  SDL.copy renderer (bullet ^. texture) Nothing (Just $ toRect (cam $ bullet ^. pos) (bullet ^. size))

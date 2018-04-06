@@ -157,6 +157,8 @@ dirToPlace pos place =
       | place ^. c < pos ^. c = -1
       | otherwise = 0
 
+type Camera = IPoint -> IPoint
+
 -----------
 -- Stack --
 -----------

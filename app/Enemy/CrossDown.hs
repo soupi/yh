@@ -10,6 +10,7 @@ module Enemy.CrossDown where
 import qualified SDL
 import qualified SDL.Primitive as SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL
+import qualified Data.Map as M
 import Control.Monad.Except
 import Control.Lens
 
@@ -30,10 +31,10 @@ wantedAssets =
   , ("chikua", MySDL.Texture "assets/imgs/chikua.png")
   ]
 
-make :: IPoint -> Either () () -> [(String, SDL.Texture)] -> Result Enemy
+make :: IPoint -> Either () () -> M.Map String SDL.Texture -> Result Enemy
 make posi dir ts = do
   let textName = "moon"
-  case (,) <$> lookup textName ts <*> lookup "chikua" ts of
+  case (,) <$> M.lookup textName ts <*> M.lookup "chikua" ts of
     Nothing ->
       throwError ["Texture not found: chikua or " ++ textName]
     Just (bt, et) ->

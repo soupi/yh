@@ -21,6 +21,7 @@ import qualified Play.Engine.State as State
 import qualified Control.Monad.State as SM
 import qualified Linear
 import qualified Data.DList as DL
+import qualified Data.Map as M
 
 import qualified Play.Engine.Movement as MV
 import Bullet
@@ -66,9 +67,9 @@ wantedAssets =
   ]
 
 
-mkMainChar :: [(String, SDL.Texture)] -> Result MainChar
+mkMainChar :: M.Map String SDL.Texture -> Result MainChar
 mkMainChar ts = do
-  case lookup "rin" ts of
+  case M.lookup "rin" ts of
     Nothing ->
       throwError ["Texture not found: rin"]
     Just rint ->
@@ -140,11 +141,11 @@ checkHit bullets mc
 
 hitTimeout = 20
 
-render :: SDL.Renderer -> MainChar -> IO ()
-render renderer mc =
+render :: SDL.Renderer -> Camera -> MainChar -> IO ()
+render renderer cam mc =
   unless (mc ^. health < 0 && mc ^. hitTimer < 0) $ do
     let
-      rect = toRect (mc ^. pos) (mc ^. size)
+      rect = toRect (cam $ mc ^. pos) (mc ^. size)
       h = fromIntegral $ mc ^. health * 3
     if mc ^. hitTimer > 0 && mc ^. hitTimer `mod` 10 < 5
     then do
