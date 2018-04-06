@@ -15,7 +15,7 @@ import qualified Play.Engine.Input as I
 
 data Command
   = Wait !Actions Int
-  | WaitUntil !Actions (IPoint -> [Enemy] -> Bool)
+  | WaitUntil !Actions (Maybe IPoint -> [Enemy] -> Bool)
   | Spawn (Result [Enemy])
   | LoadTextBox !Actions (Result TB.TextBox)
   | WaitTextBox !Actions TB.TextBox
@@ -49,7 +49,7 @@ noAction = Actions
 act :: Actions
 act = noAction
 
-update :: I.Input -> IPoint -> [Enemy] -> Script -> Result (Actions, Script)
+update :: I.Input -> Maybe IPoint -> [Enemy] -> Script -> Result (Actions, Script)
 update input mcPos enemies = \case
   [] -> pure (noAction, [])
   Wait acts i : rest
@@ -86,7 +86,10 @@ goToLoc :: IPoint -> Command
 goToLoc p =
   WaitUntil
     (act { moveMC = Just p })
-    (\mcPos _ -> isAround p mcPos (Point 20 20))
+    (\mcPos _ -> case mcPos of
+        Nothing -> False
+        Just posi -> isAround p posi (Point 20 20)
+    )
 
 render :: SDL.Renderer -> Camera -> Script -> IO ()
 render renderer _ =

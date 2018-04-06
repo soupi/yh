@@ -112,7 +112,7 @@ update input mc = do
       & over bulletsTimer (\t -> if t <= 0 then 5 else t - 1)
 
     result =
-      if mc ^. health < 0 && mc ^. hitTimer < 0
+      if mc ^. health <= 0 && mc ^. hitTimer < 0
         then (set size (Point 0 0) mc, id)
         else (newMC, addBullets)
 
@@ -155,3 +155,7 @@ render renderer cam mc =
       SDL.textureBlendMode (mc ^. texture) SDL.$= SDL.BlendAlphaBlend
       SDL.textureAlphaMod  (mc ^. texture) SDL.$= 255
       SDL.copy renderer (mc ^. texture) Nothing (Just rect)
+
+get mc l
+  | mc ^. health <= 0 && mc ^. hitTimer < 0 = Nothing
+  | otherwise = pure $ mc ^. l

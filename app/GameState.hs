@@ -90,7 +90,7 @@ update :: Input -> State -> Result (State.Command, State)
 update input state = do
   wSize <- _windowSize <$> SM.get
 
-  (acts, script') <- Script.update input (state ^. mc . pos) (state ^. enemies) (state ^. script)
+  (acts, script') <- Script.update input (SB.get (state ^. mc) pos) (state ^. enemies) (state ^. script)
 
   (mc', addMCBullets) <-
     SB.update
@@ -104,7 +104,7 @@ update input state = do
       updateListWith M.empty (const $ const M.empty) (Bullet.update wSize (state ^. enemies)) . addMCBullets $ state ^. mcBullets
 
     (enemyBullets', _mcHit) =
-      updateListWith M.empty (M.union) (Bullet.update wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
+      updateListWith M.empty (M.union) (Bullet.update wSize (maybe [] (:[]) $ SB.get (state ^. mc) id)) . addEnemiesBullets $ state ^. enemyBullets
 
   let
     newState =
