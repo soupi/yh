@@ -2,7 +2,7 @@ module Script where
 
 import Data.Maybe
 import qualified SDL
-import qualified SDL.Font as SDLF
+import qualified SDL.Mixer as Mix
 import qualified Play.Engine.MySDL.MySDL as MySDL
 
 import Enemy
@@ -12,7 +12,6 @@ import Play.Engine.Utils
 import Play.Engine.Types
 import Control.Monad.Except
 import qualified Play.Engine.Input as I
-import qualified Data.Text as T
 
 data Command
   = Wait !Actions Int
@@ -20,6 +19,8 @@ data Command
   | Spawn (Result [Enemy])
   | LoadTextBox !Actions (Result TB.TextBox)
   | WaitTextBox !Actions TB.TextBox
+  | PlayMusic (String, Maybe Mix.Music)
+  | PlayMusic' Mix.Music
 
 data ScriptData
   = Script
@@ -34,6 +35,7 @@ data Actions
   { moveMC :: Maybe IPoint
   , spawn :: [Enemy]
   , stopTheWorld :: Bool
+  , playMusic :: Maybe (String, FilePath)
   }
 
 noAction :: Actions
@@ -41,6 +43,7 @@ noAction = Actions
   { moveMC = Nothing
   , spawn = []
   , stopTheWorld = False
+  , playMusic = Nothing
   }
 
 act :: Actions
@@ -69,6 +72,16 @@ update input mcPos enemies = \case
       Nothing -> pure  (acts, rest)
       Just tb' -> pure (acts, WaitTextBox acts tb' : rest)
 
+  PlayMusic (name, m) : rest -> do
+    case m of
+      Nothing ->
+        throwError ["Audio asset not loaded: " ++ name]
+      Just msc ->
+        pure (noAction, PlayMusic' msc : rest)
+
+  PlayMusic' _ : rest ->
+    pure (noAction, rest) -- `render` takes care of playing the music
+
 goToLoc :: IPoint -> Command
 goToLoc p =
   WaitUntil
@@ -76,12 +89,14 @@ goToLoc p =
     (\mcPos _ -> isAround p mcPos (Point 20 20))
 
 render :: SDL.Renderer -> Camera -> Script -> IO ()
-render renderer cam =
+render renderer _ =
   maybe (pure ()) f . listToMaybe
   where
     f = \case
       WaitTextBox _ tb ->
         TB.render renderer tb
+      PlayMusic' m ->
+        Mix.playMusic Mix.Forever m
       _ -> pure ()
 
 getNewText :: [MySDL.Response] -> Maybe MySDL.Response

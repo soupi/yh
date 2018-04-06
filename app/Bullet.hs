@@ -19,8 +19,6 @@ import Control.DeepSeq
 import qualified Data.Map as M
 import qualified Play.Engine.Movement as MV
 
-import Debug.Trace
-
 
 data Bullet
   = Bullet

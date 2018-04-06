@@ -29,6 +29,7 @@ dependencies:
 - sdl2
 - sdl2-gfx
 - sdl2-image
+- sdl2-mixer
 - sdl2-ttf
 
 library:
@@ -64,6 +65,9 @@ executables:
     - play
 
     ghc-options:
+    - -Wall
+    - -fno-warn-missing-signatures
+    - -Werror
     - -O2
     - -rtsopts
     - -funfolding-use-threshold=16

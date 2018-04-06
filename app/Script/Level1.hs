@@ -2,8 +2,6 @@
 
 module Script.Level1 where
 
-import qualified SDL
-import qualified SDL.Font as SDLF
 import qualified Play.Engine.MySDL.MySDL as MySDL
 
 import Script
@@ -12,7 +10,6 @@ import qualified Enemy.CrossDown as CDE
 import qualified Enemy.SideToSideSpiral as SSE
 import qualified TextBox as TB
 import qualified Data.Map as M
-import Debug.Trace
 
 
 level1 :: ScriptData
@@ -29,11 +26,14 @@ wantedAssets =
   ++ [ ("chikua", MySDL.Texture "assets/imgs/chikua.png")
      , ("saito",  MySDL.Texture "assets/imgs/saito.png")
      , ("saito2", MySDL.Texture "assets/imgs/saito2.png")
+     , ("music", MySDL.Music "assets/audio/shushushu.ogg")
      ]
 
 
 lScript :: MySDL.Resources -> Script
-lScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs } =
+lScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs, MySDL.music = _ms } =
+  -- [ PlayMusic ("music", M.lookup "music" _ms)
+  
   [ LoadTextBox act{ stopTheWorld = True } $
     TB.make TB.Up 6 "..." Nothing (M.lookup "unispace" fs)
 

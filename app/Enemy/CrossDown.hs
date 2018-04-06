@@ -8,7 +8,6 @@
 module Enemy.CrossDown where
 
 import qualified SDL
-import qualified SDL.Primitive as SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL
 import qualified Data.Map as M
 import Control.Monad.Except
@@ -59,7 +58,7 @@ downAttack :: SDL.Texture -> A.Attack
 downAttack = SA.make 1 90 (10, 0) (Point 8 8)
 
 changeDirection :: Size -> Enemy -> FPoint
-changeDirection wsize enemy
+changeDirection _ enemy
   | enemy ^. direction . x == 0
   , enemy ^. direction . y == 0
   = Point 0 1

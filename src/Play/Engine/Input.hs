@@ -60,10 +60,10 @@ defKeyMap = map swap
   ]
 
 makeEvents :: Keys -> [SDL.EventPayload] -> (SDL.Scancode -> Bool) -> [(Key, SDL.Scancode)] -> Keys
-makeEvents !current _ !keyPressed =
+makeEvents !current _ !isKeyPressed =
   updateKeys current
   . M.fromListWith max
-  . fmap (fmap keyPressed)
+  . fmap (fmap isKeyPressed)
 
 updateKeys :: Keys -> M.Map Key Bool -> Keys
 updateKeys !keys !newStates =

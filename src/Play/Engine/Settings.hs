@@ -10,8 +10,6 @@ import Data.Tuple
 import Play.Engine.Types
 import Play.Engine.Input
 import Control.Lens
-import GHC.Generics
-import Control.DeepSeq
 
 data Settings
   = Settings

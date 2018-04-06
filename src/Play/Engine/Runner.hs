@@ -8,7 +8,7 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad
 import qualified SDL
 import qualified Linear
-import Control.Lens
+import Control.Lens hiding (sets)
 import Control.DeepSeq
 import Control.Concurrent.STM.TQueue
 
@@ -45,9 +45,9 @@ update
   -> (SDL.Scancode -> Bool)
   -> (Settings, Stack State.State)
   -> IO (Either [String] ([MySDL.Request], (Settings, Stack State.State)))
-update responses payload keyPressed (settings, stack) =
+update responses payload isKeyPressed (settings, stack) =
   let
-    keys = makeEvents (_keyStats settings) payload keyPressed (_keyMap settings)
+    keys = makeEvents (_keyStats settings) payload isKeyPressed (_keyMap settings)
   in pure
     . fmap (\(setts, (reqs, states)) -> (reqs, (setts, states)))
     . (keys `deepseq` runResult $! set keyStats keys settings)
@@ -62,6 +62,6 @@ render (_, renderer) stack = do
 
 setBGColorBlack :: MonadIO m => (SDL.Window, SDL.Renderer) -> m (SDL.Window, SDL.Renderer)
 setBGColorBlack sdlStuff@(_, renderer) = do
-  MySDL.setBGColor (Linear.V4 0 0 0 255) renderer
+  void $ MySDL.setBGColor (Linear.V4 0 0 0 255) renderer
   pure sdlStuff
 

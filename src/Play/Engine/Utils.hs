@@ -19,26 +19,25 @@ import Prelude hiding (head)
 import qualified Data.List as List
 import Control.Lens (over, (^.))
 import Data.List (group, sort)
-import Data.Function ((&))
 import qualified Data.DList as DL
 
 import Play.Engine.Types
 
-import Debug.Trace
+-- import Debug.Trace
 
 
 -- |
 -- replicate operation and chain it
 replicateMChain :: Monad m => Int -> (a -> m a) -> a -> m a
-replicateMChain n f x
-  | n <= 0 = return x
-  | otherwise = f x >>= replicateMChain (n-1) f
+replicateMChain n f x'
+  | n <= 0 = return x'
+  | otherwise = f x' >>= replicateMChain (n-1) f
 
 -- |
 -- if Maybe b is nothing, replace it with Left a. otherwise: Right b
 maybeToEither :: a -> Maybe b -> Either a b
-maybeToEither _ (Just y) = Right y
-maybeToEither x Nothing  = Left x
+maybeToEither _ (Just y') = Right y'
+maybeToEither x' Nothing  = Left x'
 
 
 -- |
@@ -50,17 +49,17 @@ duplicates = map List.head . filter ((>1) . length) . group . sort
 -- split arguments by element
 splitBy :: Eq a => a -> [a] -> [[a]]
 splitBy v vs = map reverse $ go [] vs
-  where go xs [] = [xs]
-        go xs (y:ys)
-          | y == v    = xs : go [] ys
-          | otherwise = go (y:xs) ys
+  where go ws [] = [ws]
+        go ws (z:zs)
+          | z == v    = ws : go [] zs
+          | otherwise = go (z:ws) zs
 
 supplyBoth :: (a -> b -> c) -> (b -> a) -> b -> c
 supplyBoth = (=<<)
 
 -- | Compose with an input function that takes two arguments
 (.:) :: (c -> d) -> (a -> b -> c) -> a -> b -> d
-(.:) f g x y = f (g x y)
+(.:) f g a b = f (g a b)
 
 absPoint :: IPoint -> IPoint
 absPoint = fmap abs
@@ -74,11 +73,11 @@ mulPoint (Point x1 y1) (Point x2 y2) = force $ Point (x1 * x2) (y1 * y2)
 {-# INLINE mulPoint #-}
 
 updateList :: (a -> [a]) -> DL.DList a -> DL.DList a
-updateList f = DL.foldr (\x acc -> DL.fromList (f x) `DL.append` acc) DL.empty
+updateList f = DL.foldr (\a acc -> DL.fromList (f a) `DL.append` acc) DL.empty
 
 updateListWith :: NFData b => b -> (b -> b -> b) -> (a -> ([a], b)) -> DL.DList a -> (DL.DList a, b)
-updateListWith start combine f = flip DL.foldr (DL.empty, start) $ \x !acc ->
-  case (f x, acc) of
+updateListWith start combine f = flip DL.foldr (DL.empty, start) $ \a !acc ->
+  case (f a, acc) of
     (([], b), (aacc, bacc)) -> (aacc, force $ combine bacc b)
     ((xs, b), (aacc, bacc)) -> (DL.fromList xs `DL.append` aacc, force $ combine bacc b)
 
@@ -137,24 +136,24 @@ isInWindow :: Size -> IPoint -> Size -> Bool
 isInWindow = isInSquare (Point 0 0)
 
 isInSquare :: IPoint -> Size -> IPoint -> Size -> Bool
-isInSquare wpos wsize pos sz
-  |  pos ^. x + sz ^. x < (wpos ^. x) || pos ^. x > wpos ^.x + wsize ^. x
-  || pos ^. y + sz ^. y < (wpos ^. y) || pos ^. y > wpos ^.y + wsize ^. y
+isInSquare wpos wsize posi sz
+  |  posi ^. x + sz ^. x < (wpos ^. x) || posi ^. x > wpos ^.x + wsize ^. x
+  || posi ^. y + sz ^. y < (wpos ^. y) || posi ^. y > wpos ^.y + wsize ^. y
   = False
 
   | otherwise = True
 
 isAround :: IPoint -> IPoint -> Size -> Bool
-isAround place pos size =
-  isInSquare (place `addPoint` Point (-5) (-5)) size pos size
+isAround place posi sz =
+  isInSquare (place `addPoint` Point (-5) (-5)) sz posi sz
 
 dirToPlace :: IPoint -> IPoint -> IPoint
-dirToPlace pos place =
+dirToPlace posi place =
   Point (dir x) (negate $ dir y)
   where
     dir c
-      | place ^. c > pos ^. c = 1
-      | place ^. c < pos ^. c = -1
+      | place ^. c > posi ^. c = 1
+      | place ^. c < posi ^. c = -1
       | otherwise = 0
 
 type Camera = IPoint -> IPoint
@@ -169,16 +168,16 @@ head :: Stack a -> a
 head = fst . pop
 
 push :: a -> Stack a -> Stack a
-push !new (Stack !x xs) = Stack new (x:xs)
+push !new (Stack !a as) = Stack new (a:as)
 
 init :: a -> Stack a
 init = flip Stack []
 
 pop :: Stack a -> (a, Maybe (Stack a))
 pop = \case
-  Stack !x [] -> (x, Nothing)
-  Stack !x (!y:ys) -> (x `seq` x, pure $! Stack y ys)
+  Stack !a [] -> (a, Nothing)
+  Stack !a (!b:bs) -> (a `seq` a, pure $! Stack b bs)
 
 replace :: a -> Stack a -> Stack a
-replace x = \case
-  Stack _ xs -> Stack (x `seq` x) xs
+replace a = \case
+  Stack _ as -> Stack (a `seq` a) as

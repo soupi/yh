@@ -24,7 +24,7 @@ type Size = Point Int
 makeLenses ''Point
 
 pointToTuple :: Point a -> (a, a)
-pointToTuple (Point !x !y) = (x, y)
+pointToTuple (Point !x' !y') = (x', y')
 
 sizeToTuple :: Size -> (Int, Int)
 sizeToTuple (Point !w !h) = (w, h)

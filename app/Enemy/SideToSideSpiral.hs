@@ -8,7 +8,6 @@
 module Enemy.SideToSideSpiral where
 
 import qualified SDL
-import qualified SDL.Primitive as SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL
 import qualified Data.Map as M
 import Control.Monad.Except

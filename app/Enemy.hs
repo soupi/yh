@@ -8,17 +8,14 @@ module Enemy where
 
 import qualified SDL
 import qualified SDL.Primitive as SDL
-import qualified Play.Engine.MySDL.MySDL as MySDL
 
 import Data.Maybe
 import Play.Engine.Utils
 import Play.Engine.Types
 import Play.Engine.Input
 import Play.Engine.Settings
-import Control.Monad.Except
 import Control.Lens
 import Control.DeepSeq
-import qualified Play.Engine.State as State
 import qualified Control.Monad.State as SM
 import qualified Linear
 import qualified Data.DList as DL
@@ -26,7 +23,6 @@ import qualified Data.DList as DL
 
 import Bullet
 import qualified Attack as A
-import qualified Attack.SpiralAttack as SA
 import qualified Play.Engine.Movement as MV
 
 
@@ -108,7 +104,7 @@ initEnemyTimers = EnemyTimers
   }
 
 update :: Input -> Enemy -> Result ([Enemy], DL.DList Bullet -> DL.DList Bullet)
-update input enemy = do
+update _ enemy = do
   wsize <- _windowSize <$> SM.get
   let
     dir = (enemy ^. directionChanger) wsize enemy

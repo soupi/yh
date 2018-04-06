@@ -12,23 +12,16 @@ import qualified SDL
 import qualified SDL.Font as SDLF
 import qualified Play.Engine.MySDL.MySDL as MySDL
 
-import Data.Tuple
-import Data.Word
-import Data.Maybe
 import Play.Engine.Utils
 import Play.Engine.Types
 import Play.Engine.Settings
 import Play.Engine.Input
 import Control.Lens
-import Control.DeepSeq
 import Control.Monad.Except
 import qualified Linear
 import qualified Control.Monad.State as SM
 import qualified Data.Text as T
-import qualified Data.Map as M
-import qualified Play.Engine.Movement as MV
 
-import Debug.Trace
 
 data Loc
   = Up
@@ -125,15 +118,15 @@ render renderer tb
             )
           pure (Point (20 + tb ^. pos . x + 96 + 20) (tb ^. pos . y + 20))
 
-      text <- SDL.createTextureFromSurface renderer
+      txt <- SDL.createTextureFromSurface renderer
         =<< SDLF.solid (tb ^. font) (Linear.V4 255 255 255 255) (T.take (tb ^. textPart) (tb ^. text))
-      ti <- SDL.queryTexture text
+      ti <- SDL.queryTexture txt
       SDL.copy
         renderer
-        text
+        txt
         Nothing
         (Just $ toRect
           loc
           (Point (fromIntegral $ SDL.textureWidth ti) (fromIntegral $ SDL.textureHeight ti))
         )
-      SDL.destroyTexture text
+      SDL.destroyTexture txt

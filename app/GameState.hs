@@ -8,14 +8,12 @@
 module GameState where
 
 import qualified SDL
-import qualified SDL.Font as SDLF
 import qualified Play.Engine.MySDL.MySDL as MySDL
 
 import Play.Engine.Utils
 import Play.Engine.Types
 import Play.Engine.Input
 import Play.Engine.Settings
-import Control.Applicative
 import Control.Monad
 import Control.Monad.Except
 import Control.Lens
@@ -23,7 +21,6 @@ import System.Random
 import qualified Play.Engine.State as State
 import qualified Play.Engine.Load as Load
 import qualified Control.Monad.State as SM
-import qualified Linear
 import qualified Data.DList as DL
 import qualified Data.Map as M
 
@@ -33,8 +30,6 @@ import Bullet hiding (update, render)
 import qualified Bullet
 import qualified ShootingBox as SB
 import qualified Enemy as Enemy
-import qualified Enemy.SideToSideSpiral as SSE
-import qualified Enemy.CrossDown as CD
 import qualified Play.Engine.ScrollingBackground as SBG
 
 
@@ -88,6 +83,7 @@ initState scrpt rs = do
         scrpt
         0
 
+initEnemyTimer :: Int
 initEnemyTimer = 60
 
 update :: Input -> State -> Result (State.Command, State)
@@ -104,10 +100,10 @@ update input state = do
   (enemies', addEnemiesBullets) <-
     bimap mconcat (foldr (.) id) . unzip <$> traverse (Enemy.update input) (state ^. enemies)
   let
-    (mcBullets', enemiesHit) =
+    (mcBullets', _enemiesHit) =
       updateListWith M.empty (const $ const M.empty) (Bullet.update wSize (state ^. enemies)) . addMCBullets $ state ^. mcBullets
 
-    (enemyBullets', mcHit) =
+    (enemyBullets', _mcHit) =
       updateListWith M.empty (M.union) (Bullet.update wSize [state ^. mc]) . addEnemiesBullets $ state ^. enemyBullets
 
   let
@@ -148,7 +144,7 @@ render renderer state = do
   let cam = addPoint $ fmap (floor . (*) (fromIntegral $ state ^. camera)) cam'
   SBG.render renderer cam (state ^. bg)
   SB.render renderer cam (state ^. mc)
-  traverse (Enemy.render renderer cam) (state ^. enemies)
+  void $ traverse (Enemy.render renderer cam) (state ^. enemies)
   forM_ (state ^. mcBullets) (Bullet.render renderer cam)
   forM_ (state ^. enemyBullets) (Bullet.render renderer cam)
   Script.render renderer cam (state ^. script)

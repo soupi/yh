@@ -4,39 +4,34 @@
 
 module Play.Engine.MySDL.MySDL where
 
-import Data.Maybe
-import Data.Either
 import Data.Word (Word8)
 import Data.Text (Text)
 import Control.Exception
-import Control.Monad (when)
 import Control.Monad.Identity
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import System.IO
-import Control.Concurrent
 import Control.Concurrent.STM.TQueue
 import Control.Concurrent.STM
 import Control.Concurrent.Async
 
-import qualified Data.Word as Word
 import qualified Foreign.C.Types as C
-import qualified Data.Word as Word
 import qualified Data.Map as M
 import qualified Data.Text as T
 
 import qualified SDL
 import qualified SDL.Image as SDLI
 import qualified SDL.Font as SDLF
+import qualified SDL.Mixer as Mix
 import qualified Linear
 
-import Debug.Trace
+--import Debug.Trace
 
 -- | Config window
 myWindowConfig :: Linear.V2 C.CInt -> SDL.WindowConfig
 myWindowConfig size = SDL.defaultWindow { SDL.windowInitialSize = size }
 
 -- | Init SDL and create a Window and pass in as a parameter to function
-withWindow :: MonadIO m => Text -> SDL.WindowConfig -> (SDL.Window -> m a) -> m a
+withWindow :: Text -> SDL.WindowConfig -> (SDL.Window -> IO a) -> IO a
 withWindow title winConf go = do
   SDL.initializeAll
   SDLI.initialize [minBound..maxBound]
@@ -45,7 +40,9 @@ withWindow title winConf go = do
   window <- SDL.createWindow title winConf
   SDL.showWindow window
 
-  result <- go window
+  result <- Mix.withAudio Mix.defaultAudio 256 $ do
+
+    go window
 
   SDL.destroyWindow window
   SDLI.quit
@@ -83,7 +80,7 @@ apploop resources responsesQueue renderer world update render = do
       liftIO $ mapM (hPutStrLn stderr . ("*** Error: " ++)) errs >> pure world
     Right (reqs, newWorld) -> do
       render newWorld
-      async $ mapConcurrently_ (runRequest resources responsesQueue renderer) reqs
+      void $ async $ mapConcurrently_ (runRequest resources responsesQueue renderer) reqs
       if checkEvent SDL.QuitEvent events
       then pure world
       else apploop resources responsesQueue renderer newWorld update render
@@ -107,15 +104,18 @@ checkEvent = elem
 data Resource
   = RTexture SDL.Texture
   | RFont SDLF.Font
+  | RMusic Mix.Music
 
 data ResourceType a
   = Texture a
   | Font a
+  | Music a
 
 data Request
   = Load ![(String, ResourceType FilePath)]
   | DestroyTexture SDL.Texture
   | MakeText (String, FilePath) T.Text
+  | PlayMusic (String, FilePath)
 
 data Response
   = ResourcesLoaded Resources
@@ -126,6 +126,7 @@ data ResourcesT f
   = Resources
   { textures :: HKD f (M.Map FilePath SDL.Texture)
   , fonts :: HKD f (M.Map FilePath SDLF.Font)
+  , music :: HKD f (M.Map FilePath Mix.Music)
   }
 
 type family HKD f a where
@@ -138,6 +139,7 @@ initResources :: IO (ResourcesT TVar)
 initResources =
   Resources
     <$> newTVarIO M.empty
+    <*> newTVarIO M.empty
     <*> newTVarIO M.empty
 
 runRequest :: ResourcesT TVar -> TQueue Response -> SDL.Renderer -> Request -> IO ()
@@ -156,6 +158,9 @@ runRequest resources queue renderer req =
         (_, RFont fnt) <- loadResource renderer resources (n, Font p)
         text <- SDL.createTextureFromSurface renderer =<< SDLF.solid fnt (Linear.V4 255 255 255 255) txt
         atomically $ writeTQueue queue $ NewText text
+      PlayMusic (n, p) -> do
+        (_, RMusic msc) <- loadResource renderer resources (n, Music p)
+        Mix.playMusic Mix.Forever msc
 
 loadResource renderer resources (n, r) =
   case r of
@@ -172,6 +177,7 @@ loadResource renderer resources (n, r) =
             txts' <- readTVar (textures resources)
             writeTVar (textures resources) (M.insert f txt txts')
           pure txt
+
     Font f -> do
       mFont <- atomically $ do
         fnts <- readTVar (fonts resources)
@@ -186,11 +192,26 @@ loadResource renderer resources (n, r) =
             writeTVar (fonts resources) (M.insert f fnt fnts')
           pure fnt
 
+    Music f -> do
+      mMusic <- atomically $ do
+        msc <- readTVar (music resources)
+        pure $ M.lookup f msc
+      (n,) . RMusic <$> case mMusic of
+        Just msc ->
+          pure msc
+        Nothing -> do
+          msc <- Mix.load f
+          atomically $ do
+            msc' <- readTVar (music resources)
+            writeTVar (music resources) (M.insert f msc msc')
+          pure msc
+
 resourcesToResponse :: [(String, Resource)] -> Response
 resourcesToResponse rs =
-  ResourcesLoaded . foldr (flip f) initS $ rs
+  ResourcesLoaded . foldr (flip g) initS $ rs
   where
-    initS = Resources M.empty M.empty
-    f s = \case
+    initS = Resources M.empty M.empty M.empty
+    g s = \case
       (n, RTexture t) -> s { textures = M.insert n t (textures s) }
       (n, RFont f) -> s { fonts = M.insert n f (fonts s) }
+      (n, RMusic m) -> s { music = M.insert n m (music s) }

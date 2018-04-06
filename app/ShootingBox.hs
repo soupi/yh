@@ -17,7 +17,6 @@ import Data.Maybe
 import Control.Monad.Except
 import Control.Lens
 import Control.DeepSeq
-import qualified Play.Engine.State as State
 import qualified Control.Monad.State as SM
 import qualified Linear
 import qualified Data.DList as DL
@@ -91,9 +90,9 @@ update :: Input -> MainChar -> Result (MainChar, DL.DList Bullet -> DL.DList Bul
 update input mc = do
   wsize <- _windowSize <$> SM.get
   let
-    direction = keysToMovement 1 input
+    dir = keysToMovement 1 input
     (mv, move) =
-      MV.update direction
+      MV.update dir
         . set MV.maxSpeed (if keyPressed KeyB input then Point 1.2 1.2 else Point 4 4)
         $ (mc ^. movement)
 

@@ -74,7 +74,7 @@ addBullets posi sz attack =
          (attack ^. movement & over MV.maxSpeed (fmap abs . mulPoint dir))
          5
          255
-        $ (posi `addPoint` Point (sz ^. x `div` 2) (sz ^. y `div` 2))
-          `addPoint` fmap (floor . (*) (fromIntegral $ sz ^. x `div` 2)) dir
+        $ (posi `addPoint` Point (w `div` 2) (h `div` 2))
+          `addPoint` fmap (floor . (*) (fromIntegral $ w `div` 2)) dir
     ) dirs
 

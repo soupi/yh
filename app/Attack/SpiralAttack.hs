@@ -8,21 +8,19 @@ module Attack.SpiralAttack where
 
 import qualified SDL
 
-import Play.Engine.Utils
 import Play.Engine.Types
 import Control.Lens
 import Control.DeepSeq
 import qualified Data.DList as DL
 
 import Bullet
-import Attack
-import qualified Attack
+import qualified Attack as A
 import qualified Play.Engine.Movement as MV
 
 
-make :: Int -> Int -> (Int, Float) -> FPoint -> SDL.Texture -> Attack
+make :: Int -> Int -> (Int, Float) -> FPoint -> SDL.Texture -> A.Attack
 make numOfOutPoints initAngle' (every, change) speed txt =
-  Attack.make
+  A.make
     (MV.make (Point 1 1) speed)
     (mkAngles initAngle' numOfOutPoints)
     every
@@ -30,10 +28,10 @@ make numOfOutPoints initAngle' (every, change) speed txt =
     spiralUpdate
 
   where
-    spiralUpdate :: IPoint -> IPoint -> Attack -> (DL.DList Bullet, Attack)
+    spiralUpdate :: IPoint -> IPoint -> A.Attack -> (DL.DList Bullet, A.Attack)
     spiralUpdate posi sz attack =
-      Attack.update posi sz attack
-        & over (_2 . outAngles) (map $ (+) change)
+      A.update posi sz attack
+        & over (_2 . A.outAngles) (map $ (+) change)
 
     mkAngles :: Int -> Int -> [Float]
     mkAngles initAngle ((`mod` 100) -> n) =
