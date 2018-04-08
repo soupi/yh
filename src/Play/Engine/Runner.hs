@@ -35,7 +35,15 @@ run settings stack = do
   resources <- MySDL.initResources
   void $ MySDL.withWindow "Game" (MySDL.myWindowConfig (Linear.V2 (winSize x) (winSize y))) $
     flip MySDL.withRenderer
-      (setBGColorBlack >=> \(window, ren) -> MySDL.apploop resources responsesQueue ren (settings, stack) update (render (window, ren) . snd))
+      (\(window, ren) ->
+          MySDL.apploop
+            resources
+            responsesQueue
+            ren
+            (settings, stack)
+            update
+            (render (window, ren) . snd)
+      )
   where
     winSize l = fromIntegral $ settings ^. windowSize . l
 

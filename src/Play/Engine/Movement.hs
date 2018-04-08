@@ -22,6 +22,7 @@ data Movement
   = Movement
   { _posFloatPart :: !FPoint
   , _speed :: !FPoint
+  , _minSpeed :: !FPoint
   , _maxSpeed :: !FPoint
   , _acceleration :: !FPoint
   , _accelerationTimer :: !Int
@@ -30,11 +31,28 @@ data Movement
 
 makeFieldsNoPrefix ''Movement
 
-make :: FPoint -> FPoint -> Movement
-make !accel !maxspeed =
+data MakeArgs
+  = MakeArgs
+  { startspeed :: !FPoint
+  , minspeed :: !FPoint
+  , maxspeed :: !FPoint
+  , accel :: !FPoint
+  }
+
+defArgs :: MakeArgs
+defArgs = MakeArgs
+  { startspeed = Point 0 0
+  , minspeed = Point 0 0
+  , maxspeed = Point 1 1
+  , accel = Point 0.1 0.1
+  }
+
+make :: MakeArgs -> Movement
+make MakeArgs{..} =
   Movement
   { _posFloatPart = Point 0 0
-  , _speed = Point 0 0
+  , _speed = startspeed
+  , _minSpeed = fmap abs minspeed
   , _maxSpeed = fmap abs maxspeed
   , _acceleration = accel
   , _accelerationTimer = 0
@@ -51,7 +69,14 @@ updateMovement !direction !mv =
             else limit (abs spd) $ (mv ^. acceleration . c) * negate (normalize spd)
       in
         if mv ^. accelerationTimer == 0
-          then limit (mv ^. maxSpeed . c) . (+ accel) $ spd
+          then
+            let
+              newSpd = limit (mv ^. maxSpeed . c) . (+ accel) $ spd
+              norm = normalize newSpd * (mv ^. minSpeed . c)
+            in
+              if abs newSpd < abs norm
+                then norm
+                else newSpd
           else spd
   in
     force $ mv

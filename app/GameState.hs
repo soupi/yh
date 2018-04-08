@@ -101,28 +101,31 @@ update input state = do
     bimap mconcat (foldr (.) id) . unzip <$> traverse (Enemy.update input) (state ^. enemies)
   let
     (mcBullets', _enemiesHit) =
-      updateListWith M.empty (const $ const M.empty) (Bullet.update wSize (state ^. enemies)) . addMCBullets $ state ^. mcBullets
+      updateListWith M.empty (const $ const M.empty) (Bullet.update wSize (state ^. enemies)) $ state ^. mcBullets
 
     (enemyBullets', _mcHit) =
-      updateListWith M.empty (M.union) (Bullet.update wSize (maybe [] (:[]) $ SB.get (state ^. mc) id)) . addEnemiesBullets $ state ^. enemyBullets
+      updateListWith M.empty (M.union) (Bullet.update wSize (maybe [] (:[]) $ SB.get (state ^. mc) id)) $ state ^. enemyBullets
 
   let
     newState =
       state'
         & set script script'
-        & set mcBullets mcBullets'
-        & set enemyBullets enemyBullets'
         & over bg SBG.updateSBG
       where
         state' =
           if Script.stopTheWorld acts
             then
               state
+                & set mcBullets mcBullets'
+                & set enemyBullets enemyBullets'
             else
               state
                 & set mc (SB.checkHit enemyBullets' mc')
                 & set enemies enemies'
                 & over enemies ((++) (Script.spawn acts) . map (Enemy.checkHit mcBullets'))
+                & set mcBullets (addMCBullets mcBullets')
+                & set enemyBullets (addEnemiesBullets enemyBullets')
+
 
   -- state stack manipulation
   if

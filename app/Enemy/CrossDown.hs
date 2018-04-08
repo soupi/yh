@@ -48,14 +48,17 @@ make posi dir ts = do
           }
 
 crossMovement :: Either () () -> MV.Movement
-crossMovement dir = MV.make (Point (mul 0.1) 0.3) (Point 4 2.5)
+crossMovement dir = MV.make $ MV.defArgs
+  { MV.maxspeed = Point 4 2.5
+  , MV.accel = Point (mul 0.1) 0.3
+  }
   where
     mul = case dir of
       Left () -> (*) (-1)
       Right () -> (*) 1
 
 downAttack :: SDL.Texture -> A.Attack
-downAttack = SA.make 1 90 (10, 0) (Point 8 8)
+downAttack = SA.make 1 90 (10, 0) $ SA.straight (Point 0 8)
 
 changeDirection :: Size -> Enemy -> FPoint
 changeDirection _ enemy

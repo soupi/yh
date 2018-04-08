@@ -71,7 +71,11 @@ addBullets posi sz attack =
        mkBullet
          (attack ^. texture)
          dir
-         (attack ^. movement & over MV.maxSpeed (fmap abs . mulPoint dir))
+         (attack ^. movement
+           & over MV.maxSpeed (fmap abs . mulPoint dir)
+           & over MV.minSpeed (fmap abs . mulPoint dir)
+           & over MV.speed (mulPoint dir)
+         )
          5
          255
         $ (posi `addPoint` Point (w `div` 2) (h `div` 2))

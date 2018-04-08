@@ -47,10 +47,14 @@ make posi ts = do
           }
 
 leftRightMovement :: MV.Movement
-leftRightMovement = MV.make (Point 0.1 0.1) (Point 1.5 1.5)
-
+leftRightMovement = MV.make $ MV.MakeArgs
+  { MV.startspeed = Point 0 0
+  , MV.minspeed = Point 0 0
+  , MV.maxspeed = Point 1.5 1.5
+  , MV.accel = Point 0.1 0.1
+  }
 singleSpiralAttack :: SDL.Texture -> A.Attack
-singleSpiralAttack = SA.make 2 0 (2, 1.2) (Point 3 3)
+singleSpiralAttack = SA.make 2 0 (2, 1.2) $ SA.gradualSlowdown (Point 8 8)
 
 changeDirection :: Size -> Enemy -> FPoint
 changeDirection wsize enemy

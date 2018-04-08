@@ -80,7 +80,10 @@ mkMainChar ts = do
           , _hitTimer = -1
           , _bulletsTimer = 5
           , _health = 1
-          , _movement = MV.make (Point 3.5 3.5) (Point 5 5)
+          , _movement = MV.make $ MV.defArgs
+            { MV.maxspeed = Point 5 5
+            , MV.accel = Point 3.5 3.5
+            }
           }
 
 charSize :: Size
@@ -109,7 +112,7 @@ update input mc = do
       & set (size . x) (if keyPressed KeyB input then charSize ^. x `div` 2 else charSize ^. x)
       & set movement mv
       & over hitTimer (\t -> if t <= 0 then -1 else t - 1)
-      & over bulletsTimer (\t -> if t <= 0 then 5 else t - 1)
+      & over bulletsTimer (\t -> if t > 0 then t - 1 else if keyPressed KeyA input then 5 else 0)
 
     result =
       if mc ^. health <= 0 && mc ^. hitTimer < 0
@@ -121,13 +124,18 @@ update input mc = do
 newBullet :: MainChar -> [Bullet]
 newBullet mc
   | mc ^. size . x == charSize ^. x =
-    [ mkBullet (mc ^. texture) (Point 0 (-1)) (MV.make (Point 0 10) (Point 0 10)) 2 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 4) 0)
-    , mkBullet (mc ^. texture) (Point 0 (-1)) (MV.make (Point 0 10) (Point 0 10)) 2 100 ((mc ^. pos) `addPoint` Point ((mc ^. size . x `div` 4) * 3) 0)
+    [ mkBullet (mc ^. texture) (Point 0 (-1)) mv 2 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 4) 0)
+    , mkBullet (mc ^. texture) (Point 0 (-1)) mv 2 100 ((mc ^. pos) `addPoint` Point ((mc ^. size . x `div` 4) * 3) 0)
     ]
   | otherwise =
-    [ mkBullet (mc ^. texture) (Point 0 (-1)) (MV.make (Point 0 10) (Point 0 10)) 5 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 2) 0)
+    [ mkBullet (mc ^. texture) (Point 0 (-1)) mv 5 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 2) 0)
     ]
 
+  where
+    mv = MV.make $ MV.defArgs
+      { MV.maxspeed = Point 0 10
+      , MV.accel = Point 0 10
+      }
 
 checkHit :: DL.DList Bullet -> MainChar -> MainChar
 checkHit bullets mc
