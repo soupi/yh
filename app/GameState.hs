@@ -54,7 +54,7 @@ wantedAssets =
   ++ SB.wantedAssets
 
 mkGameState :: Script.ScriptData -> State.State
-mkGameState sd = Load.mkState (wantedAssets ++ Script.assets sd) (mkState $ Script.script sd)
+mkGameState sd = Load.mkState 90 (wantedAssets ++ Script.assets sd) (mkState $ Script.script sd)
 
 mkState
   :: (MySDL.Resources -> Script.Script)

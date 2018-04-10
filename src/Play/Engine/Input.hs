@@ -38,6 +38,9 @@ data Key
   | KeyQuit
   deriving (Show, Read, Eq, Ord, Bounded, Enum, Generic, NFData)
 
+empty :: Input
+empty = Input mempty mempty
+
 initKeyStats :: Keys
 initKeyStats = M.fromList $ zip [minBound..maxBound] (cycle [Idle])
 

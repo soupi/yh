@@ -25,6 +25,8 @@ import Play.Engine.Types
 
 -- import Debug.Trace
 
+firstM :: Functor f => (a -> f c) -> (a, b) -> f (c, b)
+firstM f (a, b) = (, b) <$> f a
 
 -- |
 -- replicate operation and chain it

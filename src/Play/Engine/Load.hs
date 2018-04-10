@@ -22,17 +22,19 @@ data State
 makeLenses ''State
 
 mkState
-  :: [(String, MySDL.ResourceType FilePath)]
+  :: Int
+  -> [(String, MySDL.ResourceType FilePath)]
   -> (MySDL.Resources -> Result State.State)
   -> State.State
-mkState files next =
-  State.State $ State.StateF (initState files next) update render
+mkState time files next =
+  State.State $ State.StateF (initState time files next) update render
 
 initState
-  :: [(String, MySDL.ResourceType FilePath)]
+  :: Int
+  -> [(String, MySDL.ResourceType FilePath)]
   -> (MySDL.Resources -> Result State.State)
   -> State
-initState = State 90
+initState = State
 
 update :: Input -> State -> Result ([MySDL.Request], (State.Command, State))
 update _ s@(State t _ _)
