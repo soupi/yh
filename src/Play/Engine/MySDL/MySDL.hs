@@ -164,7 +164,7 @@ runRequest resources queue renderer req =
 
 loadResource renderer resources (n, r) =
   case r of
-    Texture f -> do
+    Texture (("assets/imgs/" ++) -> f) -> do
       mTxt <- atomically $ do
         txts <- readTVar (textures resources)
         pure $ M.lookup f txts
@@ -178,7 +178,7 @@ loadResource renderer resources (n, r) =
             writeTVar (textures resources) (M.insert f txt txts')
           pure txt
 
-    Font f -> do
+    Font (("assets/fonts/" ++) -> f) -> do
       mFont <- atomically $ do
         fnts <- readTVar (fonts resources)
         pure $ M.lookup f fnts
@@ -192,7 +192,7 @@ loadResource renderer resources (n, r) =
             writeTVar (fonts resources) (M.insert f fnt fnts')
           pure fnt
 
-    Music f -> do
+    Music (("assets/audio/" ++) -> f) -> do
       mMusic <- atomically $ do
         msc <- readTVar (music resources)
         pure $ M.lookup f msc

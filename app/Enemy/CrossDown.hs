@@ -26,8 +26,8 @@ import qualified Play.Engine.Movement as MV
 
 wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
-  [ ("moon", MySDL.Texture "assets/imgs/moon2.png")
-  , ("chikua", MySDL.Texture "assets/imgs/chikua.png")
+  [ ("moon", MySDL.Texture "moon2.png")
+  , ("chikua", MySDL.Texture "chikua.png")
   ]
 
 make :: IPoint -> Either () () -> M.Map String SDL.Texture -> Result Enemy

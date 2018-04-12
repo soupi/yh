@@ -3,6 +3,7 @@
 {-# LANGUAGE DuplicateRecordFields  #-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module ShootingBox where
 
@@ -23,6 +24,7 @@ import qualified Data.DList as DL
 import qualified Data.Map as M
 
 import qualified Play.Engine.Movement as MV
+import qualified Play.Engine.Sprite as Spr
 import Bullet
 
 
@@ -31,7 +33,7 @@ data MainChar
   { _pos :: {-# UNPACK #-} !IPoint
   , _size :: {-# UNPACK #-} !Size
   , _movement :: {-# UNPACK #-} !MV.Movement
-  , _texture :: SDL.Texture
+  , _sprite :: !Spr.Sprite
   , _hitTimer :: {-# UNPACK #-} !Int
   , _bulletsTimer :: {-# UNPACK #-} !Int
   , _health :: {-# UNPACK #-} !Int
@@ -62,21 +64,31 @@ instance Ord MainChar where
 
 wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
-  [ ("rin", MySDL.Texture "assets/imgs/rin.png")
+  [ ("rin-sprites", MySDL.Texture "rin_spritemap.png")
   ]
 
 
 mkMainChar :: M.Map String SDL.Texture -> Result MainChar
 mkMainChar ts = do
-  case M.lookup "rin" ts of
+  case M.lookup "rin-sprites" ts of
     Nothing ->
-      throwError ["Texture not found: rin"]
+      throwError ["Texture not found: rin-sprites"]
     Just rint ->
       pure $
         MainChar
           { _pos = Point 380 800
           , _size = charSize
-          , _texture = rint
+          , _sprite =
+            fromJust
+              $ Spr.make
+              $ Spr.MakeArgs
+              { mkActionmap = M.fromList [("normal", 0)]
+              , mkAction = "normal"
+              , mkTexture = rint
+              , mkSize = Point 300 300
+              , mkMaxPos = 1
+              , mkSpeed = 60
+              }
           , _hitTimer = -1
           , _bulletsTimer = 5
           , _health = 1
@@ -111,6 +123,7 @@ update input mc = do
       & fixPos wsize
       & set (size . x) (if keyPressed KeyB input then charSize ^. x `div` 2 else charSize ^. x)
       & set movement mv
+      & over sprite (Spr.update Nothing False)
       & over hitTimer (\t -> if t <= 0 then -1 else t - 1)
       & over bulletsTimer (\t -> if t > 0 then t - 1 else if keyPressed KeyA input then 5 else 0)
 
@@ -124,11 +137,11 @@ update input mc = do
 newBullet :: MainChar -> [Bullet]
 newBullet mc
   | mc ^. size . x == charSize ^. x =
-    [ mkBullet (mc ^. texture) (Point 0 (-1)) mv 2 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 4) 0)
-    , mkBullet (mc ^. texture) (Point 0 (-1)) mv 2 100 ((mc ^. pos) `addPoint` Point ((mc ^. size . x `div` 4) * 3) 0)
+    [ mkBullet (mc ^. sprite . Spr.texture) (Point 0 (-1)) mv 2 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 4) 0)
+    , mkBullet (mc ^. sprite . Spr.texture) (Point 0 (-1)) mv 2 100 ((mc ^. pos) `addPoint` Point ((mc ^. size . x `div` 4) * 3) 0)
     ]
   | otherwise =
-    [ mkBullet (mc ^. texture) (Point 0 (-1)) mv 5 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 2) 0)
+    [ mkBullet (mc ^. sprite . Spr.texture) (Point 0 (-1)) mv 5 100 ((mc ^. pos) `addPoint` Point (mc ^. size . x `div` 2) 0)
     ]
 
   where
@@ -160,9 +173,10 @@ render renderer cam mc =
       SDL.drawRect renderer (Just rect)
       SDL.fillRect renderer (Just rect)
     else do
-      SDL.textureBlendMode (mc ^. texture) SDL.$= SDL.BlendAlphaBlend
-      SDL.textureAlphaMod  (mc ^. texture) SDL.$= 255
-      SDL.copy renderer (mc ^. texture) Nothing (Just rect)
+      Spr.render renderer cam (mc ^. pos) (mc ^. size) (mc ^. sprite)
+      -- SDL.textureBlendMode (mc ^. texture) SDL.$= SDL.BlendAlphaBlend
+      -- SDL.textureAlphaMod  (mc ^. texture) SDL.$= 255
+      -- SDL.copy renderer (mc ^. texture) Nothing (Just rect)
 
 get mc l
   | mc ^. health <= 0 && mc ^. hitTimer < 0 = Nothing

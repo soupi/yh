@@ -26,7 +26,7 @@ import qualified Play.Engine.Movement as MV
 
 wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
-  [ ("moon", MySDL.Texture "assets/imgs/moon2.png")
+  [ ("moon", MySDL.Texture "moon2.png")
   ]
 
 

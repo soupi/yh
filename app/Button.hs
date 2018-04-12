@@ -36,7 +36,7 @@ makeFieldsNoPrefix ''Button
 
 wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
-  [ ("unispace", MySDL.Font "assets/fonts/unispace/unispace.ttf")
+  [ ("unispace", MySDL.Font "unispace/unispace.ttf")
   ]
 
 make :: IPoint -> Size -> MySDL.Resources -> T.Text -> Result Button

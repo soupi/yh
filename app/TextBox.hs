@@ -44,7 +44,7 @@ makeFieldsNoPrefix ''TextBox
 
 wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
-  [ ("unispace", MySDL.Font "assets/fonts/unispace/unispace.ttf")
+  [ ("unispace", MySDL.Font "unispace/unispace.ttf")
   ]
 
 make :: Loc -> Int -> T.Text -> Maybe SDL.Texture -> Maybe SDLF.Font -> Result TextBox
