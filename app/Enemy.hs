@@ -147,7 +147,18 @@ checkHit bullets enemy
   | any (isJust . isTouching enemy) bullets && enemy ^. health > 0
   = enemy
     & over health (flip (-) (DL.head bullets ^. damage))
-    & \enemy' -> set (timers . hitTimer) (if enemy' ^. health <= 0 then hitTimeout * 4 else hitTimeout) enemy'
+    & \enemy' ->
+      enemy'
+        & set
+           (timers . hitTimer)
+           ( if
+               | enemy' ^. health <= 0 ->
+                 hitTimeout * 4
+               | enemy' ^. timers . hitTimer < 0 ->
+                 hitTimeout
+               | otherwise ->
+                 enemy' ^. timers . hitTimer
+           )
   | otherwise
   = enemy
 
