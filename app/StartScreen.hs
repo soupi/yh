@@ -26,8 +26,8 @@ import qualified Play.Engine.State as State
 import qualified Play.Engine.Load as Load
 import qualified Control.Monad.State as SM
 
-import qualified Script.Level1 as L1
-import qualified GameState as GS
+import qualified Script.Op as Op
+import qualified VN
 import qualified Button as Btn
 
 
@@ -67,7 +67,7 @@ initState rs = do
         { _background = bgt
         , _buttons = Z.ListZipper
           []
-          (startBtn, pure $ State.Push $ GS.mkGameState L1.level1)
+          (startBtn, pure $ State.Push $ VN.make Op.op)
           [ (exitBtn, throwError [])
           ]
         }

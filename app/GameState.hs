@@ -111,6 +111,13 @@ update input state = do
       state'
         & set script script'
         & over bg SBG.updateSBG
+        & over camera
+          (\c ->
+             if
+               | c <= 0 && Script.shake acts -> 60
+               | c <= 0 -> 0
+               | otherwise -> c - 1
+          )
       where
         state' =
           if Script.stopTheWorld acts
@@ -144,7 +151,7 @@ flipEnemyDir = \case
 render :: SDL.Renderer -> State -> IO ()
 render renderer state = do
   cam' <- Point <$> randomRIO (-1, 1) <*> randomRIO (-1, 1) :: IO FPoint
-  let cam = addPoint $ fmap (floor . (*) (fromIntegral $ state ^. camera)) cam'
+  let cam = addPoint $ fmap (floor . (*) (fromIntegral $ state ^. camera `div` 3)) cam'
   SBG.render renderer cam (state ^. bg)
   SB.render renderer cam (state ^. mc)
   void $ traverse (Enemy.render renderer cam) (state ^. enemies)

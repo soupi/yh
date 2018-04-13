@@ -12,6 +12,8 @@ import Play.Engine.Utils
 import Play.Engine.Types
 import Control.Monad.Except
 import qualified Play.Engine.Input as I
+import qualified Play.Engine.State as State
+import qualified Play.Engine.Sprite as Spr
 
 data Command
   = Wait !Actions Int
@@ -21,6 +23,7 @@ data Command
   | WaitTextBox !Actions TB.TextBox
   | PlayMusic (String, Maybe Mix.Music)
   | PlayMusic' Mix.Music
+  | StopMusic
 
 data ScriptData
   = Script
@@ -35,15 +38,26 @@ data Actions
   { moveMC :: Maybe IPoint
   , spawn :: [Enemy]
   , stopTheWorld :: Bool
-  , playMusic :: Maybe (String, FilePath)
+  , shake :: Bool
+  , playMusic :: MusicAction
+  , command :: State.Command
+  , changeSprite :: Maybe Spr.Sprite
   }
+
+data MusicAction
+  = MAPlay (String, FilePath)
+  | MAContinue
+  | MAStop
 
 noAction :: Actions
 noAction = Actions
   { moveMC = Nothing
   , spawn = []
   , stopTheWorld = False
-  , playMusic = Nothing
+  , playMusic = MAContinue
+  , shake = False
+  , command = State.None
+  , changeSprite = Nothing
   }
 
 act :: Actions
@@ -65,7 +79,7 @@ update input mcPos enemies = \case
 
   LoadTextBox acts rtb : rest -> do
     tb <- rtb
-    pure (acts, WaitTextBox acts tb : rest)
+    pure (acts, WaitTextBox (acts { changeSprite = Nothing }) tb : rest)
 
   WaitTextBox acts tb : rest -> do
     TB.update input tb >>= \case
@@ -80,6 +94,9 @@ update input mcPos enemies = \case
         pure (noAction, PlayMusic' msc : rest)
 
   PlayMusic' _ : rest ->
+    pure (noAction, rest) -- `render` takes care of playing the music
+
+  StopMusic : rest ->
     pure (noAction, rest) -- `render` takes care of playing the music
 
 goToLoc :: IPoint -> Command
@@ -100,6 +117,8 @@ render renderer _ =
         TB.render renderer tb
       PlayMusic' m ->
         Mix.playMusic Mix.Forever m
+      StopMusic ->
+        void $ Mix.fadeOutMusic (1000 * 2) -- milliseconds
       _ -> pure ()
 
 getNewText :: [MySDL.Response] -> Maybe MySDL.Response

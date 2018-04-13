@@ -86,8 +86,8 @@ mkMainChar ts = do
               , mkAction = "normal"
               , mkTexture = rint
               , mkSize = Point 300 300
-              , mkMaxPos = 1
-              , mkSpeed = 60
+              , mkMaxPos = 4
+              , mkSpeed = 10
               }
           , _hitTimer = -1
           , _bulletsTimer = 5

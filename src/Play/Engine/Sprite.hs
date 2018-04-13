@@ -8,6 +8,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Play.Engine.Sprite where
 
@@ -50,6 +51,15 @@ data MakeArgs
   , mkMaxPos :: !Int
   }
 
+simpleArgs :: Size -> SDL.Texture -> MakeArgs
+simpleArgs sz t = MakeArgs
+  { mkActionmap = M.fromList [("normal", 0)]
+  , mkAction = "normal"
+  , mkSpeed = 0
+  , mkTexture = t
+  , mkSize = sz
+  , mkMaxPos = 1
+  }
 
 make :: MakeArgs -> Maybe Sprite
 make MakeArgs{..} = do
