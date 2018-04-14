@@ -26,6 +26,8 @@ import qualified Data.Text as T
 data Loc
   = Up
   | Down
+  | All
+  deriving (Show, Eq, Ord)
 
 data TextBox
   = TextBox
@@ -73,11 +75,12 @@ update input tb
     let
       locY = case tb ^. posY of
         Up -> 20
+        All -> 20
         Down -> (wSize ^. y - 220)
 
     pure $ pure $ tb
       & set pos (Point 20 locY)
-      & set size (Point (wSize ^. x - 40) 200)
+      & set size (Point (wSize ^. x - 40) $ if tb ^. posY == All then wSize ^. y - 40 else 200)
       & over textPart
         (\tp ->
            if

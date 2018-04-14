@@ -36,7 +36,7 @@ opScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs, MySDL.music = m
       spr = Spr.make . Spr.simpleArgs (Point 800 1000) =<< M.lookup "test" ts
     in
       LoadTextBox act{ changeSprite = spr } $
-        TB.make TB.Up 6 "..." Nothing (M.lookup "unispace" fs)
+        TB.make TB.All 1 "..." Nothing (M.lookup "unispace" fs)
 
   , LoadTextBox noAction $
     TB.make TB.Up 5 "I sent assassins to your campsite." (M.lookup "saito" ts) (M.lookup "unispace" fs)
