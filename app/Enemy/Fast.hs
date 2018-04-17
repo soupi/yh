@@ -5,7 +5,7 @@
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Enemy.CrossDown where
+module Enemy.Fast where
 
 import qualified SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL
@@ -30,8 +30,8 @@ wantedAssets =
   , ("chikua", MySDL.Texture "chikua.png")
   ]
 
-make :: IPoint -> Either () () -> M.Map String SDL.Texture -> Result Enemy
-make posi dir ts = do
+make :: IPoint -> M.Map String SDL.Texture -> Result Enemy
+make posi ts = do
   let textName = "moon"
   case (,) <$> M.lookup textName ts <*> M.lookup "chikua" ts of
     Nothing ->
@@ -40,29 +40,41 @@ make posi dir ts = do
       pure . mkEnemy $
         MakeEnemy
           { mkePos = posi
-          , mkeMov = crossMovement dir
-          , mkeHealth = 100
+          , mkeMov = crossMovement (Right ())
+          , mkeHealth = 150
           , mkeDirChanger = changeDirection
-          , mkeAtk = downAttack bt
-          , mkeAtkChanger = \_ _ -> Nothing
+          , mkeAtk = attackPattern bt
+          , mkeAtkChanger = \enemy atkId ->
+              if
+                | enemy ^. health < 100 && atkId < 1 -> pure $ attackPattern2 bt
+                | enemy ^. health < 50 && atkId < 2 -> pure $ attackPattern3 bt
+                | otherwise -> Nothing
+
           , mkeEnemyTxt = et
           }
 
 crossMovement :: Either () () -> MV.Movement
 crossMovement dir = MV.make $ MV.defArgs
-  { MV.maxspeed = Point 4 2.5
-  , MV.accel = Point (mul 0.1) 0.3
+  { MV.maxspeed = Point 1.8 1
+  , MV.accel = Point (mul 0.4) 0.2
   }
   where
     mul = case dir of
       Left () -> (*) (-1)
       Right () -> (*) 1
 
-downAttack :: SDL.Texture -> A.Attack
-downAttack = SA.make 1 90 (10, 0) $ SA.straight (Point 0 8)
+attackPattern :: SDL.Texture -> A.Attack
+attackPattern = SA.make 5 0 (1, 9) $ SA.fastGradualStart (Point 14 14)
+
+attackPattern2 :: SDL.Texture -> A.Attack
+attackPattern2 = SA.make 3 0 (1, 7) $ SA.fastGradualStart (Point 14 14)
+
+attackPattern3 :: SDL.Texture -> A.Attack
+attackPattern3 = SA.make 5 0 (3, 7) $ SA.gradualSlowdown (Point 8 10)
+
 
 changeDirection :: Size -> Enemy -> FPoint
-changeDirection _ enemy
+changeDirection wsize enemy
   | enemy ^. direction . x == 0
   , enemy ^. direction . y == 0
   = Point 0 1
@@ -72,6 +84,20 @@ changeDirection _ enemy
   , enemy ^. direction . x == 0
   = Point 1 1
 
-  | otherwise
+  | enemy ^. pos . y <= 0
   = enemy ^. direction
 
+  | otherwise
+  = enemy ^. direction
+    & set x
+      (if
+         | enemy ^. pos . x > (wsize ^. x * 2) `div` 3 -> -1
+         | enemy ^. pos . x <= wsize ^. x `div` 3 -> 1
+         | otherwise -> enemy ^. direction . x
+      )
+    & set y
+      (if
+         | enemy ^. pos . y > 250 -> -1
+         | enemy ^. pos . y <= 50 -> 1
+         | otherwise -> enemy ^. direction . y
+      )

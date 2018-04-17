@@ -30,7 +30,9 @@ wantedAssets =
 
 opScript :: MySDL.Resources -> Script
 opScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs, MySDL.music = ms } =
-  [ PlayMusic ("music", M.lookup "music" ms)
+  [ Wait act{ command = State.Replace $ GS.mkGameState L1.level1 } 60
+
+  , PlayMusic ("music", M.lookup "music" ms)
 
   , let
       spr = Spr.make . Spr.simpleArgs (Point 800 1000) =<< M.lookup "test" ts

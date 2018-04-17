@@ -8,6 +8,7 @@ import Script
 import Play.Engine.Types
 import qualified Enemy.CrossDown as CDE
 import qualified Enemy.SideToSideSpiral as SSE
+import qualified Enemy.Fast as Fast
 import qualified TextBox as TB
 import qualified Data.Map as M
 
@@ -35,7 +36,10 @@ lScript :: MySDL.Resources -> Script
 lScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs, MySDL.music = _ms } =
   -- [ PlayMusic ("music", M.lookup "music" _ms)
   
-  [ LoadTextBox act{ stopTheWorld = True } $
+  [ Spawn $ sequence [Fast.make (Point 350 (-100)) ts]
+  , WaitUntil noAction (const $ null)
+
+  , LoadTextBox act{ stopTheWorld = True } $
     TB.make TB.Up 6 "..." Nothing (M.lookup "unispace" fs)
 
   , LoadTextBox act{ stopTheWorld = True } $
@@ -57,8 +61,8 @@ lScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs, MySDL.music = _m
   , Wait noAction 200
   , Wait act{ stopTheWorld = True } 30
   , goToLoc $ Point 380 800
-  , Spawn $ sequence [SSE.make (Point 350 (-100)) ts]
-  
+
+  , Spawn $ sequence [Fast.make (Point 350 (-100)) ts]
   , WaitUntil noAction (const $ null)
 
   , Wait noAction 100

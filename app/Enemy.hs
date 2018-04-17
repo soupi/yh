@@ -35,6 +35,8 @@ data Enemy
   , _directionChanger :: Size -> Enemy -> FPoint
   , _texture :: SDL.Texture
   , _attack :: {-# UNPACK #-} !A.Attack
+  , _attackId :: {-# UNPACK #-} !Int
+  , _attackChanger :: Enemy -> Int -> Maybe A.Attack
   , _health :: {-# UNPACK #-} !Int
   , _timers :: {-# UNPACK #-} !EnemyTimers
   }
@@ -80,6 +82,7 @@ data MakeEnemy
   , mkeHealth :: {-# UNPACK #-} !Int
   , mkeDirChanger :: Size -> Enemy -> FPoint
   , mkeAtk :: {-# UNPACK #-} !A.Attack
+  , mkeAtkChanger :: Enemy -> Int -> Maybe A.Attack
   , mkeEnemyTxt :: SDL.Texture
   }
 
@@ -93,6 +96,8 @@ mkEnemy MakeEnemy{..} =
     , _directionChanger = mkeDirChanger
     , _texture = mkeEnemyTxt
     , _attack = mkeAtk
+    , _attackId = 0
+    , _attackChanger = mkeAtkChanger
     , _health = mkeHealth
     , _timers = initEnemyTimers
     }
@@ -115,13 +120,17 @@ update _ enemy = do
     (newBullets, attack') =
       (enemy ^. attack . A.attackUpdate) (enemy ^. pos) (enemy ^. size) (enemy ^. attack)
 
+    changedAttack =
+      (enemy ^. attackChanger) enemy (enemy ^. attackId)
+
     enemy' =
       enemy
       & over pos (`addPoint` move)
       & set movement mv
       & over timers updateTimers
       & set direction dir
-      & set attack attack'
+      & set attack (fromMaybe attack' changedAttack)
+      & over attackId (maybe id (const (+1)) changedAttack)
 
   pure
     ( if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0

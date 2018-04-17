@@ -34,7 +34,7 @@ make numOfOutPoints initAngle' (every, change) mv txt =
         & over (_2 . A.outAngles) (map $ (+) change)
 
     mkAngles :: Int -> Int -> [Float]
-    mkAngles initAngle ((`mod` 100) -> n) =
+    mkAngles initAngle ((`mod` 200) -> n) =
       let
         m = 360 / fromIntegral n
       in
@@ -50,9 +50,9 @@ straight speed = MV.make $ MV.defArgs
 
 fastGradualStart :: FPoint -> MV.Movement
 fastGradualStart speed = MV.make $ MV.defArgs
-  { MV.startspeed = Point 3 3
+  { MV.startspeed = Point 1.5 1.5
   , MV.maxspeed = speed
-  , MV.accel = Point (0.2) (0.2)
+  , MV.accel = Point 0.2 0.2
   }
 
 gradualSlowdown :: FPoint -> MV.Movement

@@ -43,6 +43,7 @@ make posi ts = do
           , mkeHealth = 100
           , mkeDirChanger = changeDirection
           , mkeAtk = singleSpiralAttack bt
+          , mkeAtkChanger = \_ _ -> Nothing
           , mkeEnemyTxt = et
           }
 

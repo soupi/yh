@@ -102,7 +102,7 @@ render renderer tb
 
   SDL.rendererDrawColor renderer SDL.$= Linear.V4 0 0 0 150
   SDL.fillRect renderer (Just rect)
-  SDL.rendererDrawColor renderer SDL.$= Linear.V4 100 130 180 200
+  SDL.rendererDrawColor renderer SDL.$= Linear.V4 255 0 160 200
   SDL.drawRect renderer (Just rect)
 
   if tb ^. textPart <= 0
