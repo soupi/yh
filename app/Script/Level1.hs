@@ -40,13 +40,13 @@ lScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs, MySDL.music = _m
   , WaitUntil noAction (const $ null)
 
   , LoadTextBox act{ stopTheWorld = True } $
-    TB.make TB.Up 6 "..." Nothing (M.lookup "unispace" fs)
+    TB.make TB.Top 6 "..." Nothing (M.lookup "unispace" fs)
 
   , LoadTextBox act{ stopTheWorld = True } $
-    TB.make TB.Up 5 "I sent assassins to your campsite." (M.lookup "saito" ts) (M.lookup "unispace" fs)
+    TB.make TB.Top 5 "I sent assassins to your campsite." (M.lookup "saito" ts) (M.lookup "unispace" fs)
 
   , LoadTextBox act{ stopTheWorld = True } $
-    TB.make TB.Down 3 "!!!" (M.lookup "rin" ts) (M.lookup "unispace" fs)
+    TB.make TB.Bottom 3 "!!!" (M.lookup "rin" ts) (M.lookup "unispace" fs)
 
   , Wait noAction 60
 
@@ -68,7 +68,7 @@ lScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs, MySDL.music = _m
   , Wait noAction 100
 
   , LoadTextBox act{ stopTheWorld = True } $
-    TB.make TB.Up 5 "orz" (M.lookup "saito" ts) (M.lookup "unispace" fs)
+    TB.make TB.Top 5 "orz" (M.lookup "saito" ts) (M.lookup "unispace" fs)
   ]
 
 spawnTwoCDEs dir1 dir2 ts =

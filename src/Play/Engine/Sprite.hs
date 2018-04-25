@@ -87,7 +87,7 @@ render :: SDL.Renderer -> Camera -> IPoint -> Size -> Sprite -> IO ()
 render renderer cam position sz sprite = do
   let
     rect = toRect (cam $ position) sz
-    ssz =  (sprite ^. size . y, sprite ^. size . y)
+    ssz =  (sprite ^. size . x, sprite ^. size . y)
     clip = SDL.Rectangle
       (Linear.P $ Linear.V2 (fst ssz * sprite ^. pos) (snd ssz * sprite ^. action))
       (uncurry Linear.V2 ssz)

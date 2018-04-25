@@ -43,8 +43,8 @@ wantedAssets =
   [ ("bg", MySDL.Texture "bg.png")
   ]
 
-make :: Script.ScriptData -> State.State
-make sd = Load.mkState 30 (wantedAssets ++ Script.assets sd) (mkState $ Script.script sd)
+make :: Int -> Script.ScriptData -> State.State
+make t sd = Load.mkState t (wantedAssets ++ Script.assets sd) (mkState $ Script.script sd)
 
 mkState
   :: (MySDL.Resources -> Script.Script)

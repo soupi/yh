@@ -1,4 +1,5 @@
 
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE DuplicateRecordFields  #-}
@@ -20,6 +21,8 @@ import Control.Lens
 import System.Random
 import qualified Play.Engine.State as State
 import qualified Play.Engine.Load as Load
+import qualified Play.Engine.Sprite as Spr
+
 import qualified Control.Monad.State as SM
 import qualified Data.DList as DL
 import qualified Data.Map as M
@@ -36,6 +39,7 @@ import qualified Play.Engine.ScrollingBackground as SBG
 data State
   = State
   { _bg :: SBG.SBG
+  , _bga :: Spr.Sprite
   , _mc :: SB.MainChar
   , _enemies :: [Enemy.Enemy]
   , _mcBullets :: DL.DList Bullet
@@ -50,6 +54,7 @@ makeFieldsNoPrefix ''State
 wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
   [ ("bg", MySDL.Texture "bg.png")
+  , ("bga", MySDL.Texture "bga.png")
   ]
   ++ SB.wantedAssets
 
@@ -68,13 +73,22 @@ mkState scrpt rs = do
 
 initState :: Script.Script -> MySDL.Resources -> Result State
 initState scrpt rs = do
-  case M.lookup "bg" (MySDL.textures rs) of
+  case M.lookup "bga" (MySDL.textures rs) of
     Nothing ->
       throwError ["Texture not found: bg"]
     Just bgt -> do
       mc' <- (SB.mkMainChar $ MySDL.textures rs)
       pure $ State
         (SBG.mkSBG bgt 1 (Point 800 1000) (Point 0 0))
+        ( maybe undefined id $ Spr.make $ Spr.MakeArgs
+          { mkActionmap = M.fromList [("normal", 0)]
+          , mkAction = "normal"
+          , mkTexture = bgt
+          , mkSize = Point 800 1000
+          , mkMaxPos = 4
+          , mkSpeed = 2
+          }
+        )
         mc'
         []
         (DL.fromList [])
@@ -118,6 +132,12 @@ update input state = do
                | c <= 0 -> 0
                | otherwise -> c - 1
           )
+         & over bga
+           ( case Script.changeSprite acts of
+               Nothing -> Spr.update Nothing False
+               Just sp -> const sp
+           )
+
       where
         state' =
           if Script.stopTheWorld acts
@@ -153,6 +173,7 @@ render renderer state = do
   cam' <- Point <$> randomRIO (-1, 1) <*> randomRIO (-1, 1) :: IO FPoint
   let cam = addPoint $ fmap (floor . (*) (fromIntegral $ state ^. camera `div` 3)) cam'
   SBG.render renderer cam (state ^. bg)
+  Spr.render renderer cam (Point 0 0) (state ^. bga . size) (state ^. bga)
   SB.render renderer cam (state ^. mc)
   void $ traverse (Enemy.render renderer cam) (state ^. enemies)
   forM_ (state ^. mcBullets) (Bullet.render renderer cam)

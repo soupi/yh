@@ -12,6 +12,7 @@ import qualified SDL
 import qualified SDL.Font as SDLF
 import qualified Play.Engine.MySDL.MySDL as MySDL
 
+import Control.Arrow
 import Play.Engine.Utils
 import Play.Engine.Types
 import Play.Engine.Settings
@@ -21,11 +22,12 @@ import Control.Monad.Except
 import qualified Linear
 import qualified Control.Monad.State as SM
 import qualified Data.Text as T
+import qualified Play.Engine.ListZipper as Zip
 
 
 data Loc
-  = Up
-  | Down
+  = Top
+  | Bottom
   | All
   deriving (Show, Eq, Ord)
 
@@ -33,11 +35,10 @@ data TextBox
   = TextBox
   { _avatar :: Maybe SDL.Texture
   , _font :: SDLF.Font
-  , _text :: T.Text
+  , _text :: Zip.ListZipper (Int, T.Text)
   , _posY :: !Loc
   , _pos :: {-# UNPACK #-} !IPoint
   , _size :: {-# UNPACK #-} !IPoint
-  , _textPart :: Int
   , _textSpeed :: Int
   , _textTimer :: Int
   }
@@ -56,11 +57,15 @@ make py spd txt mavatar (Just fnt) =
   pure $ TextBox
     { _avatar = mavatar
     , _font = fnt
-    , _text = txt
+    , _text =
+      uncurry
+        (Zip.ListZipper [])
+      . (Prelude.head &&& tail)
+      . zip (cycle [0])
+      $ if T.null txt then [""] else T.lines txt
     , _posY = py
     , _pos = Point 0 0
     , _size = Point 0 0
-    , _textPart = 0
     , _textSpeed = spd
     , _textTimer = spd
     }
@@ -68,26 +73,37 @@ make py spd txt mavatar (Just fnt) =
 update :: Input -> TextBox -> Result (Maybe TextBox)
 update input tb
   | keyClicked KeyA input
-  , (tb ^. textPart) == T.length (tb ^. text)
+  , let (l, t) = Zip.last (tb ^. text) in l == T.length t
   = pure Nothing
   | otherwise = do
     wSize <- _windowSize <$> SM.get
     let
       locY = case tb ^. posY of
-        Up -> 20
+        Top -> 20
         All -> 20
-        Down -> (wSize ^. y - 220)
+        Bottom -> (wSize ^. y - 220)
 
     pure $ pure $ tb
       & set pos (Point 20 locY)
-      & set size (Point (wSize ^. x - 40) $ if tb ^. posY == All then wSize ^. y - 40 else 200)
-      & over textPart
-        (\tp ->
+      & set size
+        (Point (wSize ^. x - 40) $
+          if tb ^. posY == All
+            then wSize ^. y - 40
+            else 200
+        )
+      & over text
+        (\(txt :: Zip.ListZipper (Int, T.Text)) ->
            if
-             | keyClicked KeyA input -> T.length (tb ^. text)
-             | tb ^. textSpeed == 0 -> T.length (tb ^. text)
-             | tb ^. textTimer == 0 && tp < T.length (tb ^. text) -> tp+1
-             | otherwise -> tp
+             | keyClicked KeyA input
+             || tb ^. textSpeed == 0 ->
+               fmap (\(_, t) -> (T.length t, t)) txt
+             | tb ^. textTimer == 0
+             && fst (Zip.get txt) < T.length (snd $ Zip.get txt) ->
+               Zip.overCurr (first (+1)) txt
+             | tb ^. textTimer == 0 ->
+               Zip.nextStop txt
+             | otherwise ->
+               txt
         )
       & over textTimer (\t -> if t <= 0 then tb ^. textSpeed else t - 1)
 
@@ -105,31 +121,37 @@ render renderer tb
   SDL.rendererDrawColor renderer SDL.$= Linear.V4 255 0 160 200
   SDL.drawRect renderer (Just rect)
 
-  if tb ^. textPart <= 0
-    then pure ()
-    else do
-      loc <- case tb ^. avatar of
-        Nothing -> pure (fmap (+20) $ tb ^. pos)
-        Just av -> do
-          SDL.copy
-            renderer
-            av
-            Nothing
-            (Just $ toRect
-              (fmap (+20) $ tb ^. pos)
-              (Point 96 96)
-            )
-          pure (Point (20 + tb ^. pos . x + 96 + 20) (tb ^. pos . y + 20))
-
-      txt <- SDL.createTextureFromSurface renderer
-        =<< SDLF.solid (tb ^. font) (Linear.V4 255 255 255 255) (T.take (tb ^. textPart) (tb ^. text))
-      ti <- SDL.queryTexture txt
+  loc <- case tb ^. avatar of
+    Nothing -> pure (fmap (+20) $ tb ^. pos)
+    Just av -> do
       SDL.copy
         renderer
-        txt
+        av
         Nothing
         (Just $ toRect
-          loc
+          (fmap (+20) $ tb ^. pos)
+          (Point 96 96)
+        )
+      pure (Point (20 + tb ^. pos . x + 96 + 20) (tb ^. pos . y + 20))
+  void $ traverse (renderText renderer tb loc) $ Zip.addIndex (tb ^. text)
+
+renderText :: SDL.Renderer -> TextBox -> IPoint -> (Int, (Int, T.Text)) -> IO ()
+renderText renderer tb loc (idx, (txtPart, txt)) =
+  if txtPart == 0
+    then pure ()
+    else do
+      texture <- SDL.createTextureFromSurface renderer
+        =<< SDLF.solid
+          (tb ^. font)
+          (Linear.V4 255 255 255 255)
+          (T.take txtPart txt)
+      ti <- SDL.queryTexture texture
+      SDL.copy
+        renderer
+        texture
+        Nothing
+        (Just $ toRect
+          (over y ((+) (idx * 35)) loc)
           (Point (fromIntegral $ SDL.textureWidth ti) (fromIntegral $ SDL.textureHeight ti))
         )
-      SDL.destroyTexture txt
+      SDL.destroyTexture texture

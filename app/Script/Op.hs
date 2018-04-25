@@ -24,28 +24,39 @@ wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
   TB.wantedAssets
   ++ [ ("test", MySDL.Texture "test.jpg")
+     , ("bga", MySDL.Texture "bga.png")
      , ("music", MySDL.Music "shushushu.ogg")
      ]
 
 
 opScript :: MySDL.Resources -> Script
 opScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs, MySDL.music = ms } =
-  [ Wait act{ command = State.Replace $ GS.mkGameState L1.level1 } 60
+  --[ Wait act{ command = State.Replace $ GS.mkGameState L1.level1 } 60
 
-  , PlayMusic ("music", M.lookup "music" ms)
+  [ PlayMusic ("music", M.lookup "music" ms)
 
   , let
-      spr = Spr.make . Spr.simpleArgs (Point 800 1000) =<< M.lookup "test" ts
+      sprargs rint =
+        Spr.make $ Spr.MakeArgs
+          { mkActionmap = M.fromList [("normal", 0)]
+          , mkAction = "normal"
+          , mkTexture = rint
+          , mkSize = Point 800 1000
+          , mkMaxPos = 4
+          , mkSpeed = 30
+          }
+      --spr = Spr.make . Spr.simpleArgs (Point 800 1000) =<< M.lookup "test" ts
+      spr = sprargs =<< M.lookup "bga" ts
     in
       LoadTextBox act{ changeSprite = spr } $
         TB.make TB.All 1 "..." Nothing (M.lookup "unispace" fs)
 
   , LoadTextBox noAction $
-    TB.make TB.Up 5 "I sent assassins to your campsite." (M.lookup "saito" ts) (M.lookup "unispace" fs)
+    TB.make TB.Top 5 "I sent assassins to your campsite." (M.lookup "saito" ts) (M.lookup "unispace" fs)
 
 
   , LoadTextBox noAction $
-    TB.make TB.Down 3 "!!!" (M.lookup "rin" ts) (M.lookup "unispace" fs)
+    TB.make TB.Bottom 3 "!!!" (M.lookup "rin" ts) (M.lookup "unispace" fs)
 
   , StopMusic
   , Wait noAction 60
