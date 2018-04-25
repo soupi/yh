@@ -26,6 +26,7 @@ wantedAssets =
   ++ [ ("test", MySDL.Texture "test.jpg")
      , ("bga", MySDL.Texture "bga.png")
      , ("music", MySDL.Music "shushushu.ogg")
+     , ("nix", MySDL.Texture "rin.png")
      ]
 
 
@@ -57,21 +58,62 @@ introScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs, MySDL.music 
 
   , nixVoice ts fs "30, self employed. A hacker."
   , nixVoice ts fs $ T.unlines
-    [ "I offer my services to companies by exposing their"
-    , "security holes and help fixing them."
+    [ "Not the criminal kind, mind you."
+    ]
+  , nixVoice ts fs $ T.unlines
+    [ "I offer my services and expertise to"
+    , "companies. I expose and help fix security"
+    , "holes in their systems."
     ]
   , nixVoice ts fs "I've been doing it for a few years now."
   , nixVoice ts fs "It's honest work, I promise."
-  , nixVoice ts fs "It's just..."
-  , nixVoice ts fs "A bit sparse sometimes."
+  , nixVoice ts fs "It's just... a bit sparse sometimes."
   , nixVoice ts fs $ T.unlines
-    [ "So in days like today, I scrap the net looking for"
-    , "work."
+    [ "So in days like today, I scrap the mailing"
+    , "lists, looking for work."
     ]
   , nixVoice ts fs "And I think that today, I hit the jackpot."
 
   , StopMusic
   , Wait noAction 60
+
+  , nixVoice ts fs $ T.unlines
+    [ "JAS, an up-and-coming security start-up has"
+    , "been making their name known. I've heard"
+    , "their new security product is top notch."
+    ]
+
+  , nixVoice ts fs $ T.unlines
+    [ "And they've just announced a challenge for"
+    , "hackers such as myself."
+    ]
+
+  , LoadTextBox noAction $
+    TB.make TB.Bottom 3
+    (T.unlines
+      [ "\"Find security holes in our system, and we'll"
+      , "award you with 20,000$!\""
+      ]
+    )
+    Nothing
+    (M.lookup "unispace" fs)
+
+  , nixVoice ts fs $ T.unlines
+    [ "With this kind of money, I could live"
+    , "comfortably for a few months without"
+    , "worring about anything!"
+    ]
+
+  , nixVoice ts fs $ T.unlines
+    [ "And it's always a good idea to get to know"
+    , "the latest technology before everyone else."
+    ]
+
+  , nixVoice ts fs "So with that in mind..."
+
+  , nixVoice ts fs "Challenge accepted!"
+
+  , Wait noAction 120
 
   , Wait act{ command = State.Replace $ GS.mkGameState L1.level1 } 60
   ]
