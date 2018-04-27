@@ -12,6 +12,8 @@ import qualified SDL
 import qualified SDL.Font as SDLF
 import qualified Play.Engine.MySDL.MySDL as MySDL
 
+import Data.Monoid ((<>))
+import Data.Maybe
 import Control.Arrow
 import Play.Engine.Utils
 import Play.Engine.Types
@@ -62,13 +64,36 @@ make py spd txt mavatar (Just fnt) =
         (Zip.ListZipper [])
       . (Prelude.head &&& tail)
       . zip (cycle [0])
-      $ if T.null txt then [""] else T.lines txt
+      . concat
+      . fmap (splitLine $ isJust mavatar)
+      . T.lines
+      $ txt
     , _posY = py
     , _pos = Point 0 0
     , _size = Point 0 0
     , _textSpeed = spd
     , _textTimer = spd
     }
+
+splitLine :: Bool -> T.Text -> [T.Text]
+splitLine hasAvatar txt =
+  groupWhile (\t1 t2 -> plus1' (T.length t1) + T.length t2 <= (if hasAvatar then 44 else 52)) ""
+  . T.words
+  $ txt
+
+
+groupWhile :: (T.Text -> T.Text -> Bool) -> T.Text -> [T.Text] -> [T.Text]
+groupWhile test t1 = \case
+  t2 : rest
+    | test t1 t2 ->
+      groupWhile test (t1 <> (if t1 == "" then "" else " ") <> t2) rest
+    | otherwise  -> t1 : groupWhile test t2 rest
+  [] -> [t1]
+
+plus1' :: Int -> Int
+plus1' n
+  | n == 0 = 0
+  | otherwise = n + 1
 
 update :: Input -> TextBox -> Result (Maybe TextBox)
 update input tb
