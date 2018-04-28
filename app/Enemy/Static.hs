@@ -5,7 +5,7 @@
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Enemy.CrossDown where
+module Enemy.Static where
 
 import qualified SDL
 import qualified Play.Engine.MySDL.MySDL as MySDL
@@ -30,8 +30,8 @@ wantedAssets =
   , ("chikua", MySDL.Texture "chikua.png")
   ]
 
-make :: IPoint -> Either () () -> M.Map String SDL.Texture -> Result Enemy
-make posi dir ts = do
+make :: IPoint -> FPoint -> Int -> M.Map String SDL.Texture -> Result Enemy
+make posi dir targetY ts = do
   let textName = "moon"
   case (,) <$> M.lookup textName ts <*> M.lookup "chikua" ts of
     Nothing ->
@@ -41,37 +41,33 @@ make posi dir ts = do
         MakeEnemy
           { mkePos = posi
           , mkeSize = Point 48 48
-          , mkeMov = crossMovement dir
-          , mkeHealth = 100
-          , mkeDirChanger = changeDirection
-          , mkeAtk = downAttack bt
+          , mkeMov = staticMovement dir
+          , mkeHealth = 5
+          , mkeDirChanger = changeDirection targetY
+          , mkeAtk = sprayAttack bt
           , mkeAtkChanger = \_ _ -> Nothing
           , mkeEnemyTxt = et
           }
 
-crossMovement :: Either () () -> MV.Movement
-crossMovement dir = MV.make $ MV.defArgs
-  { MV.maxspeed = Point 4 2.5
-  , MV.accel = Point (mul 0.1) 0.3
+staticMovement :: FPoint -> MV.Movement
+staticMovement dir = MV.make $ MV.defArgs
+  { MV.maxspeed = Point 3 3
+  , MV.accel = Point (dir ^. x * 0.1) (dir ^.y * 0.1)
   }
-  where
-    mul = case dir of
-      Left () -> (*) (-1)
-      Right () -> (*) 1
 
-downAttack :: SDL.Texture -> A.Attack
-downAttack = SA.make 1 90 (10, 0) $ SA.straight (Point 0 8)
+sprayAttack :: SDL.Texture -> A.Attack
+sprayAttack = SA.make 5 0 (45, 15) $ SA.straight (Point 2 2)
 
-changeDirection :: Size -> Enemy -> FPoint
-changeDirection _ enemy
+changeDirection :: Int -> Size -> Enemy -> FPoint
+changeDirection targetY _ enemy
   | enemy ^. direction . x == 0
   , enemy ^. direction . y == 0
-  = Point 0 1
-
-  | enemy ^. pos . y >= 0
-  , enemy ^. direction . y == 1
-  , enemy ^. direction . x == 0
+  , enemy ^. pos . y < targetY
   = Point 1 1
+
+  | enemy ^. pos . y >= targetY
+  , enemy ^. direction . y == 1
+  = Point 0 0
 
   | otherwise
   = enemy ^. direction

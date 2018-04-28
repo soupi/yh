@@ -12,13 +12,14 @@ import qualified TextBox as TB
 import qualified Play.Engine.Sprite as Spr
 import qualified Play.Engine.State as State
 import qualified Script.Level1 as L1
-import qualified GameState as GS
+import qualified VN
 
 
-intro :: ScriptData
-intro = Script
-  wantedAssets
-  introScript
+intro :: State.State
+intro =
+  VN.make 1 $ Script
+    wantedAssets
+    introScript
 
 wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
@@ -127,7 +128,7 @@ introScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs, MySDL.music 
   , Wait noAction 60
   , nixVoice ts fs "Let the hacking begin!"
 
-  , Wait act{ command = State.Replace $ GS.mkGameState L1.level1 } 60
+  , Wait act{ command = State.Replace L1.level1 } 60
   ]
 
 

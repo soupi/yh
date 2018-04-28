@@ -39,6 +39,7 @@ make posi ts = do
       pure . mkEnemy $
         MakeEnemy
           { mkePos = posi
+          , mkeSize = Point 48 48
           , mkeMov = leftRightMovement
           , mkeHealth = 100
           , mkeDirChanger = changeDirection

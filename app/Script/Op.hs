@@ -11,7 +11,6 @@ import qualified Data.Map as M
 import qualified Play.Engine.Sprite as Spr
 import qualified Play.Engine.State as State
 import qualified Script.Level1 as L1
-import qualified GameState as GS
 
 
 op :: ScriptData
@@ -27,7 +26,6 @@ wantedAssets =
      , ("bga", MySDL.Texture "bga.png")
      , ("music", MySDL.Music "shushushu.ogg")
      ]
-
 
 opScript :: MySDL.Resources -> Script
 opScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs, MySDL.music = ms } =
@@ -61,6 +59,6 @@ opScript MySDL.Resources{ MySDL.textures = ts, MySDL.fonts = fs, MySDL.music = m
   , StopMusic
   , Wait noAction 60
 
-  , Wait act{ command = State.Replace $ GS.mkGameState L1.level1 } 60
+  , Wait act{ command = State.Replace L1.level1 } 60
   ]
 

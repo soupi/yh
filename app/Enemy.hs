@@ -78,6 +78,7 @@ makeFieldsNoPrefix ''EnemyTimers
 data MakeEnemy
   = MakeEnemy
   { mkePos :: {-# UNPACK #-} !IPoint
+  , mkeSize :: {-# UNPACK #-} !Size
   , mkeMov :: {-# UNPACK #-} !MV.Movement
   , mkeHealth :: {-# UNPACK #-} !Int
   , mkeDirChanger :: Size -> Enemy -> FPoint
@@ -90,7 +91,7 @@ mkEnemy :: MakeEnemy -> Enemy
 mkEnemy MakeEnemy{..} =
   Enemy
     { _pos = mkePos
-    , _size = Point 96 96
+    , _size = mkeSize
     , _direction = Point 0 0
     , _movement = mkeMov
     , _directionChanger = mkeDirChanger

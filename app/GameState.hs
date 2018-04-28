@@ -21,14 +21,12 @@ import Control.Lens
 import System.Random
 import qualified Play.Engine.State as State
 import qualified Play.Engine.Load as Load
-import qualified Play.Engine.Sprite as Spr
 
 import qualified Control.Monad.State as SM
 import qualified Data.DList as DL
 import qualified Data.Map as M
 
 import qualified Script
-import qualified Script.Level1 as L1
 import Bullet hiding (update, render)
 import qualified Bullet
 import qualified ShootingBox as SB
@@ -39,7 +37,6 @@ import qualified Play.Engine.ScrollingBackground as SBG
 data State
   = State
   { _bg :: SBG.SBG
-  , _bga :: Spr.Sprite
   , _mc :: SB.MainChar
   , _enemies :: [Enemy.Enemy]
   , _mcBullets :: DL.DList Bullet
@@ -47,6 +44,7 @@ data State
   , _resources :: MySDL.Resources
   , _script :: Script.Script
   , _camera :: Int
+  , _restart :: State.State
   }
 
 makeFieldsNoPrefix ''State
@@ -59,36 +57,27 @@ wantedAssets =
   ++ SB.wantedAssets
 
 mkGameState :: Script.ScriptData -> State.State
-mkGameState sd = Load.mkState 30 (wantedAssets ++ Script.assets sd) (mkState $ Script.script sd)
+mkGameState sd = Load.mkState 30 (wantedAssets ++ Script.assets sd) (mkState sd)
 
 mkState
-  :: (MySDL.Resources -> Script.Script)
+  :: Script.ScriptData
   -> MySDL.Resources -> Result State.State
-mkState scrpt rs = do
-  state <- initState (scrpt rs) rs
+mkState sd rs = do
+  state <- initState sd (Script.script sd rs) rs
   pure $ State.mkState
     state
     update
     render
 
-initState :: Script.Script -> MySDL.Resources -> Result State
-initState scrpt rs = do
-  case M.lookup "bga" (MySDL.textures rs) of
+initState :: Script.ScriptData -> Script.Script -> MySDL.Resources -> Result State
+initState sd scrpt rs = do
+  case M.lookup "bg" (MySDL.textures rs) of
     Nothing ->
       throwError ["Texture not found: bg"]
     Just bgt -> do
       mc' <- (SB.mkMainChar $ MySDL.textures rs)
       pure $ State
         (SBG.mkSBG bgt 1 (Point 800 1000) (Point 0 0))
-        ( maybe undefined id $ Spr.make $ Spr.MakeArgs
-          { mkActionmap = M.fromList [("normal", 0)]
-          , mkAction = "normal"
-          , mkTexture = bgt
-          , mkSize = Point 800 1000
-          , mkMaxPos = 4
-          , mkSpeed = 2
-          }
-        )
         mc'
         []
         (DL.fromList [])
@@ -96,6 +85,7 @@ initState scrpt rs = do
         rs
         scrpt
         0
+        (mkGameState sd)
 
 initEnemyTimer :: Int
 initEnemyTimer = 60
@@ -132,11 +122,6 @@ update input state = do
                | c <= 0 -> 0
                | otherwise -> c - 1
           )
-         & over bga
-           ( case Script.changeSprite acts of
-               Nothing -> Spr.update Nothing False
-               Just sp -> const sp
-           )
 
       where
         state' =
@@ -157,7 +142,7 @@ update input state = do
   -- state stack manipulation
   if
     | keyReleased KeyC input -> do
-      pure (State.Push $ mkGameState L1.level1, state)
+      pure (State.Push $ state ^. restart, state)
     | keyReleased KeyD input ->
       pure (State.Done, state)
     | otherwise ->
@@ -173,7 +158,6 @@ render renderer state = do
   cam' <- Point <$> randomRIO (-1, 1) <*> randomRIO (-1, 1) :: IO FPoint
   let cam = addPoint $ fmap (floor . (*) (fromIntegral $ state ^. camera `div` 3)) cam'
   SBG.render renderer cam (state ^. bg)
-  Spr.render renderer cam (Point 0 0) (state ^. bga . size) (state ^. bga)
   SB.render renderer cam (state ^. mc)
   void $ traverse (Enemy.render renderer cam) (state ^. enemies)
   forM_ (state ^. mcBullets) (Bullet.render renderer cam)
