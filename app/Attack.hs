@@ -39,7 +39,7 @@ make mv angles every txt updater =
     , _outAngles = angles
     , _texture = txt
     , _attackTimerInit = every
-    , _attackTimer = 30
+    , _attackTimer = 60
     , _attackUpdate = updater
     }
 

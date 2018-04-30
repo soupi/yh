@@ -42,13 +42,13 @@ make posi ts = do
           { mkePos = posi
           , mkeSize = Point 96 96
           , mkeMov = crossMovement (Right ())
-          , mkeHealth = 150
+          , mkeHealth = 300
           , mkeDirChanger = changeDirection
           , mkeAtk = attackPattern bt
           , mkeAtkChanger = \enemy atkId ->
               if
-                | enemy ^. health < 100 && atkId < 1 -> pure $ attackPattern2 bt
-                | enemy ^. health < 50 && atkId < 2 -> pure $ attackPattern3 bt
+                | enemy ^. health < 200 && atkId < 1 -> pure $ attackPattern2 bt
+                | enemy ^. health < 100 && atkId < 2 -> pure $ attackPattern3 bt
                 | otherwise -> Nothing
 
           , mkeEnemyTxt = et
