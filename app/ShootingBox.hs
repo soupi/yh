@@ -64,7 +64,7 @@ instance Ord MainChar where
 
 wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
-  [ ("rin-sprites", MySDL.Texture "rin_spritemap.png")
+  [ ("rin-sprites", MySDL.Texture "rint.png")
   ]
 
 
@@ -85,9 +85,9 @@ mkMainChar ts = do
               { mkActionmap = M.fromList [("normal", 0)]
               , mkAction = "normal"
               , mkTexture = rint
-              , mkSize = Point 300 300
-              , mkMaxPos = 4
-              , mkSpeed = 10
+              , mkSize = Point 261 238
+              , mkMaxPos = 1
+              , mkSpeed = 900
               }
           , _hitTimer = -1
           , _bulletsTimer = 5
@@ -99,7 +99,7 @@ mkMainChar ts = do
           }
 
 charSize :: Size
-charSize = Point 32 48
+charSize = Point 48 48
 
 update :: Input -> MainChar -> Result (MainChar, DL.DList Bullet -> DL.DList Bullet)
 update input mc = do
