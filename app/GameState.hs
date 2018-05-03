@@ -142,11 +142,9 @@ update input state = do
   -- state stack manipulation
   if
     | keyReleased KeyC input -> do
-      pure (State.Push $ state ^. restart, state)
-    | keyReleased KeyD input ->
-      pure (State.Done, state)
+      pure (State.Replace $ state ^. restart, state)
     | otherwise ->
-      pure (State.None, newState)
+      pure (Script.command acts, newState)
 
 flipEnemyDir :: Either () () -> Either () ()
 flipEnemyDir = \case
