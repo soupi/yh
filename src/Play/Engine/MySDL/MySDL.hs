@@ -83,7 +83,16 @@ apploop resources responsesQueue renderer world update render = do
       void $ async $ mapConcurrently_ (runRequest resources responsesQueue renderer) reqs
       if checkEvent SDL.QuitEvent events
       then pure world
-      else apploop resources responsesQueue renderer newWorld update render
+      else do
+        when (isWindowHidden events) $ do
+          isPlaying <- Mix.playingMusic
+          when isPlaying Mix.pauseMusic
+          let
+            loop evs
+              | isWindowExposed evs = when isPlaying Mix.resumeMusic
+              | otherwise = loop =<< collectEvents
+          loop events
+        apploop resources responsesQueue renderer newWorld update render
 
 setBGColor :: MonadIO m => Linear.V4 Word8 -> SDL.Renderer -> m SDL.Renderer
 setBGColor color renderer = do
@@ -100,6 +109,17 @@ collectEvents = SDL.pollEvent >>= \case
 -- | Checks if specific event happend
 checkEvent :: SDL.EventPayload -> [SDL.EventPayload] -> Bool
 checkEvent = elem
+
+isWindowHidden :: [SDL.EventPayload] -> Bool
+isWindowHidden = any $ \case
+  SDL.WindowHiddenEvent{} -> True
+  _ -> False
+
+isWindowExposed :: [SDL.EventPayload] -> Bool
+isWindowExposed = any $ \case
+  SDL.WindowExposedEvent{} -> True
+  _ -> False
+
 
 data Resource
   = RTexture SDL.Texture
