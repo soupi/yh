@@ -26,9 +26,9 @@ import qualified Play.Engine.Movement as MV
 
 wantedAssets :: [(String, MySDL.ResourceType FilePath)]
 wantedAssets =
-  [ ("moon", MySDL.Texture "moon2.png")
+  [ ("saito2", MySDL.Texture "saito2.png")
+  , ("chikua", MySDL.Texture "chikua.png")
   ]
-
 
 make :: IPoint -> M.Map String SDL.Texture -> Result Enemy
 make posi ts = do
@@ -46,6 +46,7 @@ make posi ts = do
           , mkeAtk = singleSpiralAttack bt
           , mkeAtkChanger = \_ _ -> Nothing
           , mkeEnemyTxt = et
+          , mkeDeathTime = 0
           }
 
 leftRightMovement :: MV.Movement
@@ -55,8 +56,9 @@ leftRightMovement = MV.make $ MV.MakeArgs
   , MV.maxspeed = Point 1.5 1.5
   , MV.accel = Point 0.1 0.1
   }
+
 singleSpiralAttack :: SDL.Texture -> A.Attack
-singleSpiralAttack = SA.make 6 0 (2, 1.2) $ SA.gradualSlowdown (Point 8 8)
+singleSpiralAttack = SA.make 6 0 (2, 1.2) $ MV.gradualSlowdown (Point 8 8)
 
 changeDirection :: Size -> Enemy -> FPoint
 changeDirection wsize enemy

@@ -47,6 +47,7 @@ make posi dir ts = do
           , mkeAtk = downAttack bt
           , mkeAtkChanger = \_ _ -> Nothing
           , mkeEnemyTxt = et
+          , mkeDeathTime = 20
           }
 
 crossMovement :: Either () () -> MV.Movement
@@ -60,7 +61,7 @@ crossMovement dir = MV.make $ MV.defArgs
       Right () -> (*) 1
 
 downAttack :: SDL.Texture -> A.Attack
-downAttack = SA.make 1 90 (10, 0) $ SA.straight (Point 0 8)
+downAttack = SA.make 1 90 (10, 0) $ MV.straight (Point 0 8)
 
 changeDirection :: Size -> Enemy -> FPoint
 changeDirection _ enemy

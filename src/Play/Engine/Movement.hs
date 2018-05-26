@@ -103,3 +103,26 @@ update !dir !mv =
     pfp = spd `addPoint` fmap (fromIntegral . negate) addition
   in
     force (set posFloatPart pfp $ updateMovement dir mv, addition)
+
+
+straight :: FPoint -> Movement
+straight spd = make $ defArgs
+  { startspeed = spd
+  , maxspeed = spd
+  , accel = Point 1 1 `mulPoint` fmap abs spd
+  }
+
+fastGradualStart :: FPoint -> Movement
+fastGradualStart spd = make $ defArgs
+  { startspeed = spd
+  , maxspeed = fmap (*4) spd
+  , accel = Point 0.11 0.11 `mulPoint` fmap abs spd
+  }
+
+gradualSlowdown :: FPoint -> Movement
+gradualSlowdown spd = make $ defArgs
+  { startspeed = spd
+  , minspeed = fmap (/4) spd
+  , maxspeed = spd
+  , accel = Point (-0.02) (-0.02) `mulPoint` fmap abs spd
+  }

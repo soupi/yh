@@ -3,10 +3,12 @@
 {-# LANGUAGE DuplicateRecordFields  #-}
 {-# LANGUAGE FlexibleInstances  #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Enemy where
 
 import qualified SDL
+import qualified SDL.Vect as Vect
 import qualified SDL.Primitive as SDL
 
 import Data.Maybe
@@ -14,16 +16,17 @@ import Play.Engine.Utils
 import Play.Engine.Types
 import Play.Engine.Input
 import Play.Engine.Settings
-import Control.Lens
+import Control.Lens hiding (parts)
 import Control.DeepSeq
 import qualified Control.Monad.State as SM
-import qualified Linear
 import qualified Data.DList as DL
-
 
 import Bullet
 import qualified Attack as A
+import qualified DecorationObject as DO
+import qualified DecObj.SplitTexture as ST
 import qualified Play.Engine.Movement as MV
+
 
 
 data Enemy
@@ -38,8 +41,10 @@ data Enemy
   , _attackId :: {-# UNPACK #-} !Int
   , _attackChanger :: Enemy -> Int -> Maybe A.Attack
   , _health :: {-# UNPACK #-} !Int
+  , _deathTime :: {-# UNPACK #-} !Int
   , _timers :: {-# UNPACK #-} !EnemyTimers
   }
+
 data EnemyTimers
   = EnemyTimers
   { _hitTimer :: {-# UNPACK #-} !Int
@@ -85,6 +90,7 @@ data MakeEnemy
   , mkeAtk :: {-# UNPACK #-} !A.Attack
   , mkeAtkChanger :: Enemy -> Int -> Maybe A.Attack
   , mkeEnemyTxt :: SDL.Texture
+  , mkeDeathTime :: {-# UNPACK #-} !Int
   }
 
 mkEnemy :: MakeEnemy -> Enemy
@@ -100,6 +106,7 @@ mkEnemy MakeEnemy{..} =
     , _attackId = 0
     , _attackChanger = mkeAtkChanger
     , _health = mkeHealth
+    , _deathTime = mkeDeathTime
     , _timers = initEnemyTimers
     }
 
@@ -109,7 +116,7 @@ initEnemyTimers = EnemyTimers
   , _gracePeriodTimer = 60 * 5
   }
 
-update :: Input -> Enemy -> Result ([Enemy], DL.DList Bullet -> DL.DList Bullet)
+update :: Input -> Enemy -> Result ([Enemy], DL.DList Bullet -> DL.DList Bullet, [DO.DecorationObject])
 update _ enemy = do
   wsize <- _windowSize <$> SM.get
   let
@@ -126,23 +133,37 @@ update _ enemy = do
 
     enemy' =
       enemy
-      & over pos (`addPoint` move)
+      & over pos (if isAlive enemy then (`addPoint` move) else id)
       & set movement mv
       & over timers updateTimers
       & set direction dir
       & set attack (fromMaybe attack' changedAttack)
       & over attackId (maybe id (const (+1)) changedAttack)
 
+  parts <-
+    if isDead enemy'
+      then
+        ST.make $ ST.MakeSplitTexture
+          { mkPos = enemy' ^. pos
+          , mkSize = enemy' ^. size
+          , mkSplit = Point 3 3
+          , mkTexture = enemy' ^. texture
+          , mkTexturePos = Point 0 0
+          , mkDeathTime = enemy' ^. deathTime
+          }
+      else pure []
+
   pure
-    ( if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0
+    ( if isDead enemy'
         || not (isInWindow wsize (enemy ^. pos) (enemy ^. size))
            && (enemy' ^. timers . gracePeriodTimer) < 0
         then []
         else pure enemy'
-    , if enemy' ^. health <= 0 && enemy' ^. timers . hitTimer < 0
+    , if isDead enemy'
         || not (isInWindow wsize (enemy ^. pos) (Point 0 0))
         then id
         else DL.append newBullets
+    , parts
     )
 
 updateTimers :: EnemyTimers -> EnemyTimers
@@ -150,7 +171,6 @@ updateTimers et =
   et
     & over hitTimer (\t -> if t <= 0 then -1 else t - 1)
     & over gracePeriodTimer (\t -> if t <= 0 then -1 else t - 1)
-
 
 checkHit :: DL.DList Bullet -> Enemy -> Enemy
 checkHit bullets enemy
@@ -174,21 +194,30 @@ checkHit bullets enemy
 
 hitTimeout = 20
 
+isDead :: Enemy -> Bool
+isDead enemy =
+  enemy ^. health <= 0
+  && enemy ^. timers . hitTimer < 0
+
+isAlive :: Enemy -> Bool
+isAlive enemy =
+  enemy ^. health > 0
+
 render :: SDL.Renderer -> Camera -> Enemy -> IO ()
 render renderer cam enemy = do
   let
     rect = toRect (cam $ enemy ^. pos) (enemy ^. size)
     h = fromIntegral $ 255 - max 0 (enemy ^. health * 2)
-  if enemy ^. timers . hitTimer > 0 && enemy ^. timers . hitTimer `mod` 6 < 3
-  then do
-    let
-      colour = Linear.V4 255 (255 - h) (255 - h) 150
-      radius = fromIntegral $ enemy ^. size . x `div` 2
-      center =
-        Linear.V2
-          (fromIntegral (cam (enemy ^. pos) ^. x) + radius)
-          (fromIntegral (cam (enemy ^. pos) ^. y) + radius)
-    SDL.circle renderer center radius colour
-    SDL.fillCircle renderer center radius colour
-  else
-    SDL.copy renderer (enemy ^. texture) Nothing (Just rect)
+  if
+    | enemy ^. timers . hitTimer > 0 && enemy ^. timers . hitTimer `mod` 6 < 3 -> do
+      let
+        colour = Vect.V4 255 (255 - h) (255 - h) 150
+        radius = fromIntegral $ enemy ^. size . x `div` 2
+        center =
+          Vect.V2
+            (fromIntegral (cam (enemy ^. pos) ^. x) + radius)
+            (fromIntegral (cam (enemy ^. pos) ^. y) + radius)
+      SDL.circle renderer center radius colour
+      SDL.fillCircle renderer center radius colour
+    | otherwise ->
+      SDL.copy renderer (enemy ^. texture) Nothing (Just rect)

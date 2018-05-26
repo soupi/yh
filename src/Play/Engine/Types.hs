@@ -1,30 +1,31 @@
-{-# LANGUAGE TemplateHaskell, DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Play.Engine.Types where
 
-import Control.Lens (makeLenses)
-import GHC.Generics
-import Control.DeepSeq
+import qualified SDL.Vect as Vect
+
+import Control.Lens
 
 -----------
 -- Types --
 -----------
 
-data Point a
-  = Point
-  { _x :: !a
-  , _y :: !a
-  }
-  deriving (Show, Read, Eq, Ord, Functor, Generic, NFData)
+type Point a = Vect.V2 a
+type IPoint = Vect.V2 Int
+type FPoint = Vect.V2 Float
+type Size = Vect.V2 Int
 
-type IPoint = Point Int
-type FPoint = Point Float
-type Size = Point Int
+x :: Lens' (Vect.V2 a) a
+x = lens (\(Vect.V2 a _) -> a) (\(Vect.V2 _ b) a -> (Vect.V2 a b))
 
-makeLenses ''Point
+y :: Lens' (Vect.V2 a) a
+y = lens (\(Vect.V2 _ b) -> b) (\(Vect.V2 a _) b -> (Vect.V2 a b))
+
+pattern Point :: a -> a -> Vect.V2 a
+pattern Point x' y' = Vect.V2 x' y'
 
 pointToTuple :: Point a -> (a, a)
 pointToTuple (Point !x' !y') = (x', y')
 
 sizeToTuple :: Size -> (Int, Int)
-sizeToTuple (Point !w !h) = (w, h)
+sizeToTuple (Vect.V2 !w !h) = (w, h)

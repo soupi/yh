@@ -47,6 +47,7 @@ make posi dir targetY ts = do
           , mkeAtk = sprayAttack bt
           , mkeAtkChanger = \_ _ -> Nothing
           , mkeEnemyTxt = et
+          , mkeDeathTime = 30
           }
 
 staticMovement :: FPoint -> MV.Movement
@@ -56,7 +57,7 @@ staticMovement dir = MV.make $ MV.defArgs
   }
 
 sprayAttack :: SDL.Texture -> A.Attack
-sprayAttack = SA.make 5 0 (45, 15) $ SA.straight (Point 2 2)
+sprayAttack = SA.make 5 0 (45, 15) $ MV.straight (Point 3.5 3.5)
 
 changeDirection :: Int -> Size -> Enemy -> FPoint
 changeDirection targetY _ enemy

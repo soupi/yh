@@ -44,7 +44,7 @@ make posi ts = do
           , mkeMov = crossMovement (Right ())
           , mkeHealth = 300
           , mkeDirChanger = changeDirection
-          , mkeAtk = attackPattern bt
+          , mkeAtk = attackPattern1 bt
           , mkeAtkChanger = \enemy atkId ->
               if
                 | enemy ^. health < 200 && atkId < 1 -> pure $ attackPattern2 bt
@@ -52,6 +52,7 @@ make posi ts = do
                 | otherwise -> Nothing
 
           , mkeEnemyTxt = et
+          , mkeDeathTime = 100
           }
 
 crossMovement :: Either () () -> MV.Movement
@@ -64,14 +65,14 @@ crossMovement dir = MV.make $ MV.defArgs
       Left () -> (*) (-1)
       Right () -> (*) 1
 
-attackPattern :: SDL.Texture -> A.Attack
-attackPattern = SA.make 5 0 (1, 9) $ SA.fastGradualStart (Point 14 14)
+attackPattern1 :: SDL.Texture -> A.Attack
+attackPattern1 = SA.make 5 0 (1, 9) $ MV.fastGradualStart (Point 3.2 3.2)
 
 attackPattern2 :: SDL.Texture -> A.Attack
-attackPattern2 = SA.make 3 0 (1, 7) $ SA.fastGradualStart (Point 14 14)
+attackPattern2 = SA.make 3 0 (1, 7) $ MV.fastGradualStart (Point 3.2 3.2)
 
 attackPattern3 :: SDL.Texture -> A.Attack
-attackPattern3 = SA.make 5 0 (3, 7) $ SA.gradualSlowdown (Point 8 10)
+attackPattern3 = SA.make 5 0 (3, 7) $ MV.gradualSlowdown (Point 12 14)
 
 
 changeDirection :: Size -> Enemy -> FPoint

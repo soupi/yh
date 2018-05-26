@@ -160,6 +160,15 @@ dirToPlace posi place =
 
 type Camera = IPoint -> IPoint
 
+mkAngles :: Int -> Int -> [Float]
+mkAngles initAngle ((`mod` 200) -> n) =
+  let
+    m = 360 / fromIntegral n
+  in
+    force $ map ((+) (fromIntegral initAngle) . (*) m . fromIntegral) [0..(n-1)]
+
+
+
 -----------
 -- Stack --
 -----------

@@ -18,6 +18,8 @@ import Play.Engine.Settings
 import Control.Monad
 import Control.Monad.Except
 import Control.Lens
+import Data.Maybe
+import Data.Foldable
 import System.Random
 import qualified Play.Engine.State as State
 import qualified Play.Engine.Load as Load
@@ -31,6 +33,7 @@ import Bullet hiding (update, render)
 import qualified Bullet
 import qualified ShootingBox as SB
 import qualified Enemy as Enemy
+import qualified DecorationObject as DO
 import qualified Play.Engine.ScrollingBackground as SBG
 
 
@@ -41,6 +44,7 @@ data State
   , _enemies :: [Enemy.Enemy]
   , _mcBullets :: DL.DList Bullet
   , _enemyBullets :: DL.DList Bullet
+  , _decObjs :: DL.DList DO.DecorationObject
   , _resources :: MySDL.Resources
   , _script :: Script.Script
   , _camera :: Int
@@ -82,6 +86,7 @@ initState sd scrpt rs = do
         []
         (DL.fromList [])
         (DL.fromList [])
+        (DL.fromList [])
         rs
         scrpt
         0
@@ -101,14 +106,22 @@ update input state = do
       (maybe input (dirToInput . dirToPlace (state ^. mc . pos)) (Script.moveMC acts))
       (state ^. mc)
 
-  (enemies', addEnemiesBullets) <-
-    bimap mconcat (foldr (.) id) . unzip <$> traverse (Enemy.update input) (state ^. enemies)
+  (enemies', addEnemiesBullets, newDecObjs) <-
+    (\(a, b, c) ->
+       ( mconcat a
+       , foldr (.) id b
+       , foldr (\curr acc -> DL.fromList curr `DL.append` acc) DL.empty c
+       )
+    ) . unzip3
+      <$> traverse (Enemy.update input) (state ^. enemies)
   let
     (mcBullets', _enemiesHit) =
       updateListWith M.empty (const $ const M.empty) (Bullet.update wSize (state ^. enemies)) $ state ^. mcBullets
 
     (enemyBullets', _mcHit) =
       updateListWith M.empty (M.union) (Bullet.update wSize (maybe [] (:[]) $ SB.get (state ^. mc) id)) $ state ^. enemyBullets
+
+  updatedDecObjs <- updateDecObjs input (state ^. decObjs)
 
   let
     newState =
@@ -137,14 +150,25 @@ update input state = do
                 & over enemies ((++) (Script.spawn acts) . map (Enemy.checkHit mcBullets'))
                 & set mcBullets (addMCBullets mcBullets')
                 & set enemyBullets (addEnemiesBullets enemyBullets')
-
-
-  -- state stack manipulation
+                & set decObjs (updatedDecObjs `DL.append` newDecObjs)
   if
     | keyReleased KeyC input -> do
       pure (State.Replace $ state ^. restart, state)
     | otherwise ->
       pure (Script.command acts, newState)
+
+
+updateDecObjs :: Input -> DL.DList DO.DecorationObject -> Result (DL.DList DO.DecorationObject)
+updateDecObjs input =
+  foldrM
+    ( \(DO.DecObj obj@(DO.DecObj'{..})) acc -> do
+      (r, objs) <- _update input _state
+      pure $ DL.append
+        (DL.fromList $ maybeToList (fmap (DO.DecObj . flip (set DO.state) obj) r) ++ objs)
+        acc
+    )
+    DL.empty
+
 
 flipEnemyDir :: Either () () -> Either () ()
 flipEnemyDir = \case
@@ -158,6 +182,7 @@ render renderer state = do
   SBG.render renderer cam (state ^. bg)
   SB.render renderer cam (state ^. mc)
   void $ traverse (Enemy.render renderer cam) (state ^. enemies)
+  forM_ (state ^. decObjs) (\(DO.DecObj (DO.DecObj'{..})) -> _render renderer cam _state)
   forM_ (state ^. mcBullets) (Bullet.render renderer cam)
   forM_ (state ^. enemyBullets) (Bullet.render renderer cam)
   Script.render renderer cam (state ^. script)
