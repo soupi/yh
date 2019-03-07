@@ -1,3 +1,9 @@
+Please visit the repository of the full game:
+
+https://gitlab.com/gilmi/haskell-play
+
+
+
 # yh
 
 A tech demo for a shmup game.
